@@ -53,3 +53,6 @@ dkms.conf
 
 # debug information files
 *.dwo
+
+# Exceção: a raylib pré-compilada precisa ir para o repositório
+!vendor/raylib/lib/libraylib.a
