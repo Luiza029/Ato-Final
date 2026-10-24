@@ -29,5 +29,6 @@ void voltarCursor(Listas_notas *lista, int notas_para_voltar);
 void atualizarEstadoNota(Nota *nota, EstadoNota estado);
 void imprimirLista(Listas_notas *lista);
 void liberarLista(Listas_notas *lista);
+void ordenarNotas(Listas_notas *lista);
 
 #endif
