@@ -42,4 +42,12 @@ void ordenarNotas(Listas_notas *lista){
             posicao->proximo = atual;
         }
     }
+
+    if(lista->cursor == NULL && lista->fim->estado == PENDENTE){
+        lista->cursor = lista->fim;
+    }
+    
+    while(lista->cursor != NULL && lista->cursor->anterior != NULL && lista->cursor->anterior->estado == PENDENTE){
+        lista->cursor = lista->cursor->anterior;
+    }
 }
