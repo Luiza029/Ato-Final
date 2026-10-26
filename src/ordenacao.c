@@ -2,7 +2,7 @@
 #include "listas_notas.h"
 
 void ordenarNotas(Listas_notas *lista){
-    if (lista == NULL || lista->inicio == NULL || lista->inicio->proximo == NULL){
+    if(lista == NULL || lista->inicio == NULL || lista->inicio->proximo == NULL){
         return;
     }
 
@@ -11,18 +11,18 @@ void ordenarNotas(Listas_notas *lista){
     lista->inicio->proximo = NULL;
     lista->fim = lista->inicio;
 
-    while (restante != NULL){
+    while(restante != NULL){
         Nota *atual = restante;
         restante = restante->proximo;
         atual->anterior = NULL;
         atual->proximo = NULL;
 
         Nota *posicao = lista->fim;
-        while (posicao != NULL && posicao->tempo > atual->tempo){
+        while(posicao != NULL && posicao->tempo > atual->tempo){
             posicao = posicao->anterior;
         }
 
-        if (posicao == NULL){
+        if(posicao == NULL){
             atual->proximo = lista->inicio;
             lista->inicio->anterior = atual;
             lista->inicio = atual;
@@ -32,7 +32,7 @@ void ordenarNotas(Listas_notas *lista){
             atual->anterior = posicao;
             atual->proximo = posicao->proximo;
 
-            if (posicao->proximo != NULL){
+            if(posicao->proximo != NULL){
                 posicao->proximo->anterior = atual;
             
             }else{

@@ -45,8 +45,12 @@ Nota *buscarNota(Listas_notas *lista, int lane, float tempo){
 
     Nota *atual = lista->inicio;
 
-    while (atual != NULL){
-        if (atual->lane == lane && atual->estado == PENDENTE && fabsf(atual->tempo - tempo) <= JANELA_BOM){
+    while(atual != NULL){
+        if(atual->tempo > tempo + JANELA_BOM){
+            break;
+        }
+
+        if(atual->lane == lane && atual->estado == PENDENTE && fabsf(atual->tempo - tempo) <= JANELA_BOM){
             return atual;
         }
         atual = atual->proximo;
@@ -60,7 +64,7 @@ Nota *processarProximaNota(Listas_notas *lista){
 
     Nota *atual = lista->cursor;
 
-    if (atual == NULL){
+    if(atual == NULL){
         return NULL;
     }
     lista->cursor = atual->proximo;
@@ -70,7 +74,7 @@ Nota *processarProximaNota(Listas_notas *lista){
 
 
 void atualizarEstadoNota(Nota *nota, EstadoNota estado){
-    if (nota == NULL){
+    if(nota == NULL){
         return;
     }
 
@@ -79,15 +83,15 @@ void atualizarEstadoNota(Nota *nota, EstadoNota estado){
 
 
 void voltarCursor(Listas_notas *lista, int notas_para_voltar){
-    if (lista->fim == NULL){
+    if(lista->fim == NULL){
         return;
     }
 
-    while (notas_para_voltar > 0){
-        if (lista->cursor == NULL){
+    while(notas_para_voltar > 0){
+        if(lista->cursor == NULL){
             lista->cursor = lista->fim;
 
-        }else if (lista->cursor->anterior != NULL){
+        }else if(lista->cursor->anterior != NULL){
             lista->cursor = lista->cursor->anterior;
 
         }else{
@@ -103,7 +107,7 @@ void voltarCursor(Listas_notas *lista, int notas_para_voltar){
 void liberarLista(Listas_notas *lista){
     Nota *atual = lista->inicio;
 
-    while (atual != NULL){
+    while(atual != NULL){
         Nota *proxima = atual->proximo;
         free(atual);
 
@@ -118,22 +122,22 @@ void liberarLista(Listas_notas *lista){
 
 
 void removerNota(Listas_notas *lista, Nota *nota){
-    if (lista == NULL || nota == NULL){
+    if(lista == NULL || nota == NULL){
         return;
     }
 
-    if (lista->cursor == nota){
+    if(lista->cursor == nota){
         lista->cursor = nota->proximo;
     }
 
-    if (nota->anterior != NULL){
+    if(nota->anterior != NULL){
         nota->anterior->proximo = nota->proximo;
     
     }else{
         lista->inicio = nota->proximo;
     }
 
-    if (nota->proximo != NULL){
+    if(nota->proximo != NULL){
         nota->proximo->anterior = nota->anterior;
     
     }else{
@@ -161,14 +165,65 @@ void imprimirLista(Listas_notas *lista){
 
     printf("Lista com %d nota(s):\n", lista->quantidade_de_notas);
 
-    while (atual != NULL){
+    while(atual != NULL){
         printf("%s[%d] tempo=%.2f lane=%d estado=%s injetada=%d\n", (atual == lista->cursor) ? "-> " : "   ", posicao, atual->tempo, atual->lane, nomeEstado(atual->estado), atual->injetada);
 
         atual = atual->proximo;
         posicao++;
     }
 
-    if (lista->cursor == NULL){
+    if(lista->cursor == NULL){
         printf("   (cursor no fim)\n");
     }
+}
+
+
+void imprimirListaInversa(Listas_notas *lista){
+    Nota *atual = lista->fim;
+    int posicao = lista->quantidade_de_notas - 1;
+
+    printf("Lista invertida com %d nota(s):\n", lista->quantidade_de_notas);
+
+    while(atual != NULL){
+        printf("%s[%d] tempo=%.2f lane=%d estado=%s injetada=%d\n", (atual == lista->cursor) ? "-> " : "   ", posicao, atual->tempo, atual->lane, nomeEstado(atual->estado), atual->injetada);
+
+        atual = atual->anterior;
+        posicao--;
+    }
+}
+
+
+int contarNotasPorEstado(Listas_notas *lista, EstadoNota estado){
+    Nota *atual = lista->inicio;
+    int contador = 0;
+    
+    while(atual != NULL){
+        if(atual->estado == estado){
+            contador++;
+        }
+        atual = atual->proximo;
+    }
+
+    return contador;
+}
+
+
+float calcularPercentualAcertos(Listas_notas *lista){
+    if(lista->quantidade_de_notas == 0){
+        return 0.0f;
+    }
+
+    int acertos = contarNotasPorEstado(lista, PERFEITO) + contarNotasPorEstado(lista, BOM);
+
+    return (float)acertos / (float)lista->quantidade_de_notas;
+}
+
+
+Nota *espiarProximaNota(Listas_notas *lista){
+
+    if(lista == NULL){
+        return NULL;
+    }
+
+    return lista->cursor;
 }
