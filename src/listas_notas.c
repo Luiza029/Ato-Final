@@ -43,14 +43,14 @@ void inserirNota(Listas_notas *lista, float tempo, int lane, int injetada){
 
 Nota *buscarNota(Listas_notas *lista, int lane, float tempo){
 
-    Nota *atual = lista->inicio;
+    Nota *atual = lista->cursor;
 
-    while(atual != NULL){
+    while (atual != NULL){
         if(atual->tempo > tempo + JANELA_BOM){
-            break;
+            return NULL;
         }
 
-        if(atual->lane == lane && atual->estado == PENDENTE && fabsf(atual->tempo - tempo) <= JANELA_BOM){
+        if (atual->lane == lane && atual->estado == PENDENTE && fabsf(atual->tempo - tempo) <= JANELA_BOM){
             return atual;
         }
         atual = atual->proximo;
@@ -165,14 +165,26 @@ void imprimirLista(Listas_notas *lista){
 
     printf("Lista com %d nota(s):\n", lista->quantidade_de_notas);
 
-    while(atual != NULL){
+    printf("Frente para Tras: \n");
+    while (atual != NULL){
         printf("%s[%d] tempo=%.2f lane=%d estado=%s injetada=%d\n", (atual == lista->cursor) ? "-> " : "   ", posicao, atual->tempo, atual->lane, nomeEstado(atual->estado), atual->injetada);
 
         atual = atual->proximo;
         posicao++;
     }
 
-    if(lista->cursor == NULL){
+    printf("Tras para frente: \n");
+    atual = lista->fim;
+    posicao = lista->quantidade_de_notas - 1;
+    while (atual != NULL){
+        printf("%s[%d] tempo=%.2f lane=%d estado=%s injetada=%d\n", (atual == lista->cursor) ? "-> " : "   ", posicao, atual->tempo, atual->lane, nomeEstado(atual->estado), atual->injetada);
+
+        atual = atual->anterior;
+        posicao--;
+    }
+
+
+    if (lista->cursor == NULL){
         printf("   (cursor no fim)\n");
     }
 }

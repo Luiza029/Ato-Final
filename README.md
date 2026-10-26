@@ -16,3 +16,16 @@ Durante a partida, o jogador deverá acompanhar uma sequência de notas musicais
 
 - **Gênero:** Terror
 - **Estilo:** Jogo de ritmo
+
+## Como compilar
+
+Instale (só uma vez), no PowerShell:
+
+C:\msys64\usr\bin\bash.exe -lc "pacman -S --noconfirm mingw-w64-ucrt-x86_64-make"
+
+Rode:
+
+mingw32-make          → compila o jogo
+mingw32-make rodar    → compila e abre o jogo
+mingw32-make teste    → compila e roda o teste da lista
+mingw32-make limpar   → apaga os .exe 
