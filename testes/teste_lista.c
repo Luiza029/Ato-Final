@@ -105,5 +105,35 @@ int main(void){
     conferir("liberar deixa a lista vazia", lista.inicio == NULL && lista.fim == NULL && lista.cursor == NULL && lista.quantidade_de_notas == 0);
 
     printf("\n%d falha(s)\n", falhas);
+
+    Listas_notas lista_injecao;
+    criarLista(&lista_injecao);
+    inserirNota(&lista_injecao, 1.0f, 0, 0);
+    inserirNota(&lista_injecao, 2.0f, 1, 0);
+    inserirNota(&lista_injecao, 5.0f, 2, 0);
+    atualizarEstadoNota(processarProximaNota(&lista_injecao), BOM);
+    atualizarEstadoNota(processarProximaNota(&lista_injecao), BOM);
+    conferir("cursor na nota de 5.0 antes da injeção", lista_injecao.cursor != NULL && lista_injecao.cursor->tempo == 5.0f);
+
+    inserirNota(&lista_injecao, 3.0f, 3, 1);
+    ordenarNotas(&lista_injecao);
+    conferir("cursor volta para a nota injetada de 3.0", lista_injecao.cursor != NULL && lista_injecao.cursor->tempo == 3.0f);
+
+    Nota *nota_julgada;
+    while((nota_julgada = processarProximaNota(&lista_injecao)) != NULL){
+        atualizarEstadoNota(nota_julgada, ERRADO);
+    }
+    conferir("cursor em NULL depois de julgar tudo", lista_injecao.cursor == NULL);
+
+    float percentual = calcularPercentualAcertos(&lista_injecao);
+    conferir("percentual ignora notas injetadas (2 de 3)", percentual > 0.66f && percentual < 0.67f);
+
+    inserirNota(&lista_injecao, 6.0f, 0, 1);
+    inserirNota(&lista_injecao, 6.5f, 1, 1);
+    ordenarNotas(&lista_injecao);
+    conferir("injeção no fim: cursor vai para a primeira injetada", lista_injecao.cursor != NULL && lista_injecao.cursor->tempo == 6.0f);
+
+    liberarLista(&lista_injecao);
+
     return falhas == 0 ? 0 : 1;
 }

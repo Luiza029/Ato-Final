@@ -220,13 +220,30 @@ int contarNotasPorEstado(const Listas_notas *lista, EstadoNota estado){
 /* Fração de acertos (PERFEITO ou BOM), de 0 a 1, como PERCENTUAL_MINIMO_VITORIA.
    Lista vazia retorna 0. */
 float calcularPercentualAcertos(const Listas_notas *lista){
-    if(lista->quantidade_de_notas == 0){
+    int total_do_mapa = 0;
+    int acertos = 0;
+
+    Nota *atual = lista->inicio;
+    while (atual != NULL){
+        if(atual->injetada == 1){
+            atual = atual->proximo;
+            continue;
+        }
+
+        total_do_mapa++;
+        
+        if(atual->estado == PERFEITO || atual->estado == BOM){
+            acertos++;
+        }
+
+        atual = atual->proximo;
+    }
+
+    if(total_do_mapa == 0){
         return 0.0f;
     }
 
-    int acertos = contarNotasPorEstado(lista, PERFEITO) + contarNotasPorEstado(lista, BOM);
-
-    return (float)acertos / (float)lista->quantidade_de_notas;
+    return (float) acertos / total_do_mapa;
 }
 
 
