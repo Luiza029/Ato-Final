@@ -202,7 +202,7 @@ void imprimirLista(Listas_notas *lista){
 
 
 /* Conta quantas notas estão no estado informado. */
-int contarNotasPorEstado(Listas_notas *lista, EstadoNota estado){
+int contarNotasPorEstado(const Listas_notas *lista, EstadoNota estado){
     Nota *atual = lista->inicio;
     int contador = 0;
     
@@ -219,7 +219,7 @@ int contarNotasPorEstado(Listas_notas *lista, EstadoNota estado){
 
 /* Fração de acertos (PERFEITO ou BOM), de 0 a 1, como PERCENTUAL_MINIMO_VITORIA.
    Lista vazia retorna 0. */
-float calcularPercentualAcertos(Listas_notas *lista){
+float calcularPercentualAcertos(const Listas_notas *lista){
     if(lista->quantidade_de_notas == 0){
         return 0.0f;
     }
