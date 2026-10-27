@@ -27,8 +27,6 @@ int carregarMapa(Listas_notas *lista, const char *caminho_mapa){
     }
 
     fclose(arq);
-
     ordenarNotas(lista);
-
     return 1;
 }
