@@ -1,6 +1,7 @@
 #include <stddef.h>
-#include "listas_notas.h"
+#include "ordenacao.h"
 
+/* Insertion Sort por tempo, religando os nós (estável) e ajustando o cursor. */
 void ordenarNotas(Listas_notas *lista){
     if(lista == NULL || lista->inicio == NULL || lista->inicio->proximo == NULL){
         return;
