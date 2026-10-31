@@ -56,3 +56,6 @@ dkms.conf
 
 # Exceção: a raylib pré-compilada precisa ir para o repositório
 !vendor/raylib/lib/libraylib.a
+
+# Configuração local do LSP
+compile_flags.txt
