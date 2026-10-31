@@ -1,5 +1,6 @@
 #include "jogo.h"
 #include "constantes.h"
+#include "listas_notas.h"
 #include "mapa.h"
 #include <math.h>
 #include <stdio.h>
@@ -111,6 +112,29 @@ void tratarTeclaLane(EstadoJogo *jogo, int lane) {
   registrarAcerto(jogo, resultado);
 }
 
+void verificarFimDeJogo(EstadoJogo *jogo) {
+  if (jogo->fase != FASE_JOGANDO) {
+    return;
+  }
+
+  // Se o assassino alcançou.
+  if (jogo->distancia_assassino <= DISTANCIA_MINIMA_ASSASSINO) {
+    jogo->fase = FASE_DERROTA;
+    return;
+  }
+
+  // Se as notas acabaram (cursor passou da última nota).
+  if (jogo->lista.cursor == NULL) {
+    if (calcularPercentualAcertos(&jogo->lista) >= PERCENTUAL_MINIMO_VITORIA) {
+      jogo->fase = FASE_VITORIA;
+    }
+
+    else {
+      jogo->fase = FASE_DERROTA;
+    }
+  }
+}
+
 void atualizarJogo(EstadoJogo *jogo, float delta_tempo) {
   if (jogo->tempo_feedback > 0) {
     jogo->tempo_feedback -= delta_tempo;
@@ -147,4 +171,6 @@ void atualizarJogo(EstadoJogo *jogo, float delta_tempo) {
     processarProximaNota(&jogo->lista);
     nota = jogo->lista.cursor;
   }
+
+  verificarFimDeJogo(jogo);
 }
