@@ -2,6 +2,7 @@
 #include "constantes.h"
 #include "listas_notas.h"
 #include "mapa.h"
+#include "ordenacao.h"
 #include <math.h>
 #include <stdio.h>
 
@@ -135,6 +136,22 @@ void verificarFimDeJogo(EstadoJogo *jogo) {
   }
 }
 
+void injetarNotas(EstadoJogo *jogo) {
+  if (jogo->erros_acumulados < ERROS_PARA_INJECAO) {
+    return;
+  }
+
+  for (int i = 0; i < NOTAS_POR_INJECAO; i++) {
+    float tempo = jogo->tempo_atual + ANTECEDENCIA_INJECAO +
+                  INTERVALO_NOTAS_INJETADAS * i;
+    int lane = i % QUANTIDADE_LANES;
+    inserirNota(&jogo->lista, tempo, lane, 1);
+  }
+
+  ordenarNotas(&jogo->lista);
+  jogo->erros_acumulados = 0;
+}
+
 void atualizarJogo(EstadoJogo *jogo, float delta_tempo) {
   if (jogo->tempo_feedback > 0) {
     jogo->tempo_feedback -= delta_tempo;
@@ -172,5 +189,6 @@ void atualizarJogo(EstadoJogo *jogo, float delta_tempo) {
     nota = jogo->lista.cursor;
   }
 
+  injetarNotas(jogo);
   verificarFimDeJogo(jogo);
 }
