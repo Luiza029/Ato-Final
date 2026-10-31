@@ -152,6 +152,24 @@ void injetarNotas(EstadoJogo *jogo) {
   jogo->erros_acumulados = 0;
 }
 
+void usarRewind(EstadoJogo *jogo) {
+  if (jogo->fase != FASE_JOGANDO || jogo->rewinds_restantes <= 0) {
+    return;
+  }
+
+  voltarCursor(&jogo->lista, NOTAS_POR_REWIND);
+
+  if (jogo->lista.cursor == NULL) {
+    return;
+  }
+
+  jogo->rewinds_restantes--;
+  jogo->tempo_atual = jogo->lista.cursor->tempo - RESPIRO_APOS_REWIND;
+
+  jogo->fase = FASE_REWIND;
+  jogo->temporizador_fase = 0;
+}
+
 void atualizarJogo(EstadoJogo *jogo, float delta_tempo) {
   if (jogo->tempo_feedback > 0) {
     jogo->tempo_feedback -= delta_tempo;
@@ -161,6 +179,16 @@ void atualizarJogo(EstadoJogo *jogo, float delta_tempo) {
     jogo->tempo_atual += delta_tempo;
 
     if (jogo->tempo_atual >= 0) {
+      jogo->fase = FASE_JOGANDO;
+    }
+
+    return;
+  }
+
+  if (jogo->fase == FASE_REWIND) {
+    jogo->temporizador_fase += delta_tempo;
+
+    if (jogo->temporizador_fase >= DURACAO_ANIMACAO_REWIND) {
       jogo->fase = FASE_JOGANDO;
     }
 
