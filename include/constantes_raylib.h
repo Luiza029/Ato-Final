@@ -35,6 +35,7 @@ static const char *const ROTULOS_LANES[QUANTIDADE_LANES] = { "D", "F", "J", "K" 
 #define COR_LINHA_ACERTO      (Color){ 230, 230, 230, 255 }
 #define COR_TEXTO             (Color){ 235, 235, 235, 255 }
 #define COR_TEXTO_DESTAQUE    (Color){ 200, 30, 30, 255 }   // vermelho sangue
+#define COR_FUNDO_MENU        (Color){ 30, 31, 44, 255 }   // igual ao fundo da arte do menu
 
 // Notas normais: uma cor por lane
 static const Color CORES_LANES[QUANTIDADE_LANES] = {

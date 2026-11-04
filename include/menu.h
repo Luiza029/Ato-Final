@@ -8,14 +8,19 @@ typedef enum OpcaoMenu{
     QUANTIDADE_OPCOES_MENU
 } OpcaoMenu;
 
-/* Desenha o menu destacando a opcao selecionada. */
+typedef enum Dificuldade{
+    DIFICULDADE_FACIL,
+    DIFICULDADE_MEDIO,
+    DIFICULDADE_DIFICIL,
+    QUANTIDADE_DIFICULDADES
+} Dificuldade;
+
+void carregarMenu(void);
+void descarregarMenu(void);
 void desenharMenu(OpcaoMenu opcao_selecionada);
-
-/* Le as setas do teclado e atualiza a opcao selecionada.
-   Retorna 1 quando o jogador confirma e 0 caso contrario. */
 int atualizarMenu(OpcaoMenu *opcao_selecionada);
-
-/* Tela com as instrucoes do jogo. */
 void desenharComoJogar(void);
+int atualizarSelecaoDificuldade(Dificuldade *dificuldade_selecionada);
+void desenharSelecaoDificuldade(Dificuldade dificuldade_selecionada);
 
 #endif
