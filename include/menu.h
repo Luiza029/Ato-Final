@@ -4,6 +4,7 @@
 typedef enum OpcaoMenu{
     MENU_JOGAR,
     MENU_COMO_JOGAR,
+    MENU_VOLUME,
     MENU_SAIR,
     QUANTIDADE_OPCOES_MENU
 } OpcaoMenu;
@@ -27,5 +28,14 @@ void desenharSelecaoDificuldade(Dificuldade dificuldade_selecionada);
    atualizarSelecaoMusica retorna 1 quando o jogador aperta ENTER. */
 int atualizarSelecaoMusica(int *opcao_selecionada, int quantidade_musicas);
 void desenharSelecaoMusica(char **caminhos_musicas, int quantidade_musicas, int opcao_selecionada, const char *mensagem);
+
+/* Tela de volume: setas esquerda/direita mudam o volume em passos de PASSO_VOLUME.
+   atualizarVolume retorna 1 quando o volume mudou neste frame. */
+int atualizarVolume(int *volume_percentual);
+void desenharVolume(int volume_percentual, const char *nome_previa);
+
+/* Le o volume salvo em CAMINHO_CONFIGURACAO (ou VOLUME_PADRAO se nao houver) e salva o escolhido. */
+int carregarVolume(void);
+void salvarVolume(int volume_percentual);
 
 #endif

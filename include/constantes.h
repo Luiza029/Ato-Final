@@ -81,6 +81,16 @@
 #define MAXIMO_MUSICAS_VISIVEIS 6
 #define POSICAO_Y_LISTA_MUSICAS 230
 
+//                         VOLUME
+#define CAMINHO_CONFIGURACAO "configuracao.txt"
+#define VOLUME_PADRAO 50                    // em %, as musicas baixadas costumam vir altas
+#define VOLUME_MAXIMO 100
+#define PASSO_VOLUME 5
+#define INICIO_PREVIA_VOLUME 20.0f          // segundo da musica tocado como previa na tela de volume
+#define LARGURA_BARRA_VOLUME 600
+#define ALTURA_BARRA_VOLUME 32
+#define POSICAO_Y_BARRA_VOLUME 320
+
 //                   GERADOR DE MAPAS
 #define PASTA_MAPAS "mapas/"
 #define TAMANHO_MAXIMO_CAMINHO 512

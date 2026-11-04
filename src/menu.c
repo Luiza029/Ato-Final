@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include "raylib.h"
 #include "menu.h"
 #include "constantes.h"
@@ -7,6 +8,7 @@
 static const char *TEXTOS_OPCOES[QUANTIDADE_OPCOES_MENU] = {
     "Jogar",
     "Como jogar",
+    "Volume",
     "Sair"
 };
 
@@ -211,4 +213,64 @@ void desenharSelecaoMusica(char **caminhos_musicas, int quantidade_musicas, int 
     desenharTextoCentralizado("Ou arraste um arquivo .mp3, .ogg ou .wav para a janela", centro_x, ALTURA_JANELA - MARGEM_TELA - 2 * TAMANHO_FONTE_INFO - MARGEM_TELA, TAMANHO_FONTE_INFO, COR_TEXTO);
 
     desenharTextoCentralizado("Setas para escolher, ENTER para confirmar, BACKSPACE para voltar", centro_x, ALTURA_JANELA - MARGEM_TELA - TAMANHO_FONTE_INFO, TAMANHO_FONTE_INFO, Fade(COR_TEXTO, OPACIDADE_OPCAO_MENU));
+}
+
+/* Tela de volume: o volume vai de 0 a VOLUME_MAXIMO, em passos de PASSO_VOLUME. */
+int atualizarVolume(int *volume_percentual){
+    int volume_anterior = *volume_percentual;
+
+    if(IsKeyPressed(TECLA_MENU_DIREITA) && *volume_percentual < VOLUME_MAXIMO){
+        *volume_percentual += PASSO_VOLUME;
+    }
+    if(IsKeyPressed(TECLA_MENU_ESQUERDA) && *volume_percentual > 0){
+        *volume_percentual -= PASSO_VOLUME;
+    }
+
+    return *volume_percentual != volume_anterior;
+}
+
+void desenharVolume(int volume_percentual, const char *nome_previa){
+    int centro_x = LARGURA_JANELA / 2;
+
+    DrawRectangle(0, 0, LARGURA_JANELA, ALTURA_JANELA, COR_FUNDO_MENU);
+
+    desenharTextoCentralizado("Volume", centro_x, POSICAO_Y_TITULO_MENU, TAMANHO_FONTE_TITULO, COR_TEXTO_DESTAQUE);
+
+    // Barra: contorno com o tamanho total e o preenchimento proporcional ao volume
+    int barra_x = centro_x - LARGURA_BARRA_VOLUME / 2;
+    int largura_preenchida = LARGURA_BARRA_VOLUME * volume_percentual / VOLUME_MAXIMO;
+
+    DrawRectangle(barra_x, POSICAO_Y_BARRA_VOLUME, largura_preenchida, ALTURA_BARRA_VOLUME, COR_TEXTO_DESTAQUE);
+    DrawRectangleLines(barra_x, POSICAO_Y_BARRA_VOLUME, LARGURA_BARRA_VOLUME, ALTURA_BARRA_VOLUME, COR_TEXTO);
+
+    desenharTextoCentralizado(TextFormat("< %d%% >", volume_percentual), centro_x, POSICAO_Y_BARRA_VOLUME + ALTURA_BARRA_VOLUME + ESPACO_LINHAS_MENU / 2, TAMANHO_FONTE_OPCOES_MENU, COR_TEXTO);
+
+    if(nome_previa[0] != '\0'){
+        desenharTextoCentralizado(TextFormat("Tocando: %s", nome_previa), centro_x, POSICAO_Y_BARRA_VOLUME + ALTURA_BARRA_VOLUME + 2 * ESPACO_OPCOES_MENU, TAMANHO_FONTE_INFO, COR_PERFEITO);
+    }
+
+    desenharTextoCentralizado("Setas esquerda e direita para ajustar, ENTER ou BACKSPACE para voltar", centro_x, ALTURA_JANELA - MARGEM_TELA - TAMANHO_FONTE_INFO, TAMANHO_FONTE_INFO, Fade(COR_TEXTO, OPACIDADE_OPCAO_MENU));
+}
+
+int carregarVolume(void){
+    FILE *arq = fopen(CAMINHO_CONFIGURACAO, "r");
+    int volume = VOLUME_PADRAO;
+
+    if(arq != NULL){
+        if(fscanf(arq, "volume %d", &volume) != 1 || volume < 0 || volume > VOLUME_MAXIMO){
+            volume = VOLUME_PADRAO;
+        }
+        fclose(arq);
+    }
+
+    return volume;
+}
+
+void salvarVolume(int volume_percentual){
+    FILE *arq = fopen(CAMINHO_CONFIGURACAO, "w");
+
+    if(arq != NULL){
+        fprintf(arq, "volume %d\n", volume_percentual);
+        fclose(arq);
+    }
 }
