@@ -64,14 +64,36 @@
 #define ESPERA_FIM_DA_MUSICA 2.0f
 
 //                       ARQUIVOS
-#define CAMINHO_MAPA_PADRAO "mapas/mapa_fase1.txt"
+#define CAMINHO_MAPA_PADRAO "mapas/mapa_teste_longo.txt"
 
 // Mapa de cada dificuldade (por enquanto, todas usam o mapa de teste)
 #define CAMINHO_MAPA_FACIL   CAMINHO_MAPA_PADRAO
 #define CAMINHO_MAPA_MEDIO   CAMINHO_MAPA_PADRAO
 #define CAMINHO_MAPA_DIFICIL CAMINHO_MAPA_PADRAO
 #define CAMINHO_FUNDO_MENU "assets/menu_fundo.png"
-#define CAMINHO_MUSICA_PADRAO "assets/musica_fase1.ogg"
+#define CAMINHO_MUSICA_PADRAO "assets/musicas/halloween_theme.mp3"
+
+//                  BIBLIOTECA DE MUSICAS
+#define PASTA_MUSICAS "assets/musicas"
+#define EXTENSOES_MUSICA ".mp3;.ogg;.wav"
+#define TAMANHO_MAXIMO_NOME_MUSICA 64
+#define TAMANHO_MENSAGEM_MUSICA 160
+#define MAXIMO_MUSICAS_VISIVEIS 6
+#define POSICAO_Y_LISTA_MUSICAS 230
+
+//                   GERADOR DE MAPAS
+#define PASTA_MAPAS "mapas/"
+#define TAMANHO_MAXIMO_CAMINHO 512
+#define AMOSTRAS_POR_JANELA_GERADOR 1024    // ~23 ms de som em 44100 Hz
+#define JANELAS_HISTORICO_GERADOR 43        // ~1 s de historico para a media de energia
+#define ENERGIA_MINIMA_BATIDA 0.0005f       // abaixo disso e silencio, nunca vira nota
+#define SENSIBILIDADE_FACIL 1.6f            // quantas vezes acima da media para virar nota
+#define SENSIBILIDADE_MEDIO 1.4f
+#define SENSIBILIDADE_DIFICIL 1.25f
+#define INTERVALO_MINIMO_FACIL 0.7f         // segundos entre duas notas
+#define INTERVALO_MINIMO_MEDIO 0.28f
+#define INTERVALO_MINIMO_DIFICIL 0.16f
+#define FATOR_ACORDE_DIFICIL 3.0f           // batida muito forte no dificil vira acorde (nunca dois seguidos)
 
 //                        INTERFACE
 #define MARGEM_TELA 20

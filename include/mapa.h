@@ -4,4 +4,7 @@
 
 /* Lê o arquivo do mapa e insere as notas na lista. */
 int carregarMapa(Listas_notas *lista, const char *caminho_mapa);
-#endif
+
+/* Grava as notas da lista no arquivo do mapa, no mesmo formato lido por carregarMapa. */
+int salvarMapa(const Listas_notas *lista, const char *caminho_mapa);
+#endif
