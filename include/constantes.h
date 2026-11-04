@@ -63,6 +63,11 @@
 #define DURACAO_FEEDBACK 0.4f
 #define ESPERA_FIM_DA_MUSICA 2.0f
 
+//                  SINCRONIA COM A MUSICA
+#define AJUSTE_SINCRONIA 0.06f          
+#define LIMITE_DESSINCRONIA 0.15f       
+#define FATOR_CORRECAO_RELOGIO 0.1f     
+
 //                       ARQUIVOS
 #define CAMINHO_MAPA_PADRAO "mapas/mapa_teste_longo.txt"
 

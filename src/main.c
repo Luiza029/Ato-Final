@@ -10,6 +10,7 @@
 #include "gerador.h"
 #include "musicas.h"
 #include "arquivos_windows.h"
+#include <math.h>
 
 typedef enum Tela{
     TELA_MENU,
@@ -19,6 +20,19 @@ typedef enum Tela{
     TELA_DIFICULDADE,
     TELA_JOGO
 } Tela;
+
+static float sincronizarRelogio(float tempo_jogo, float tempo_musica, float delta_tempo){
+    float tempo_alvo = tempo_musica + AJUSTE_SINCRONIA;
+    float tempo_previsto = tempo_jogo + delta_tempo;
+    float diferenca = tempo_alvo - tempo_previsto;
+
+    // Diferenca grande: a musica pulou (comeco ou rewind), o relogio pula junto
+    if(fabsf(diferenca) > LIMITE_DESSINCRONIA){
+        return tempo_alvo;
+    }
+
+    return tempo_previsto + diferenca * FATOR_CORRECAO_RELOGIO;
+}
 
 /* Troca a musica da partida: prepara os mapas dela (gerando se precisar) e carrega o audio.
    Se der errado, mantem a musica e os mapas que estavam, escreve o aviso em mensagem e retorna 0. */
@@ -268,7 +282,7 @@ int main(void){
 
                 // Enquanto a musica toca, o relogio do jogo e o da musica. Quando ela acaba, segue pelo frame.
                 if(tem_musica && IsMusicStreamPlaying(musica)){
-                    jogo.tempo_atual = GetMusicTimePlayed(musica);
+                    jogo.tempo_atual = sincronizarRelogio(jogo.tempo_atual, GetMusicTimePlayed(musica), delta_tempo);
                 }
 
                 else{
