@@ -23,4 +23,9 @@ void desenharComoJogar(void);
 int atualizarSelecaoDificuldade(Dificuldade *dificuldade_selecionada);
 void desenharSelecaoDificuldade(Dificuldade dificuldade_selecionada);
 
+/* Tela temporaria de escolha da musica. A ultima opcao (indice quantidade_musicas) e "Adicionar musica".
+   atualizarSelecaoMusica retorna 1 quando o jogador aperta ENTER. */
+int atualizarSelecaoMusica(int *opcao_selecionada, int quantidade_musicas);
+void desenharSelecaoMusica(char **caminhos_musicas, int quantidade_musicas, int opcao_selecionada, const char *mensagem);
+
 #endif

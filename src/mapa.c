@@ -30,3 +30,25 @@ int carregarMapa(Listas_notas *lista, const char *caminho_mapa){
     ordenarNotas(lista);
     return 1;
 }
+
+
+/* Grava as notas do mapa (nao injetadas) no arquivo, uma por linha: tempo lane.
+   Retorna 1 se deu certo e 0 se nao conseguiu criar o arquivo. */
+int salvarMapa(const Listas_notas *lista, const char *caminho_mapa){
+    FILE *arq = fopen(caminho_mapa, "w");
+
+    if(arq == NULL){
+        return 0;
+    }
+
+    for(const Nota *nota = lista->inicio; nota != NULL; nota = nota->proximo){
+        if(nota->injetada){
+            continue;
+        }
+
+        fprintf(arq, "%.3f %d\n", nota->tempo, nota->lane);
+    }
+
+    fclose(arq);
+    return 1;
+}

@@ -2,6 +2,7 @@
 #include "menu.h"
 #include "constantes.h"
 #include "constantes_raylib.h"
+#include "musicas.h"
 
 static const char *TEXTOS_OPCOES[QUANTIDADE_OPCOES_MENU] = {
     "Jogar",
@@ -156,8 +157,58 @@ void desenharSelecaoDificuldade(Dificuldade dificuldade_selecionada){
 
     desenharTextoCentralizado(DESCRICOES_DIFICULDADES[dificuldade_selecionada], centro_x, posicao_y + ESPACO_LINHAS_MENU,TAMANHO_FONTE_TEXTO, COR_TEXTO);
 
-    /* Aviso temporário: enquanto os mapas definitivos não ficam prontos */
-    desenharTextoCentralizado("Por enquanto, as tres dificuldades usam o mapa de teste.", centro_x, ALTURA_JANELA - MARGEM_TELA - 2 * TAMANHO_FONTE_INFO - MARGEM_TELA, TAMANHO_FONTE_INFO, COR_PERFEITO);
-
     desenharTextoCentralizado("Setas para escolher, ENTER para jogar, BACKSPACE para voltar", centro_x, ALTURA_JANELA - MARGEM_TELA - TAMANHO_FONTE_INFO, TAMANHO_FONTE_INFO, Fade(COR_TEXTO, OPACIDADE_OPCAO_MENU));
+}
+
+/* Tela temporaria de escolha da musica: as musicas da pasta e, por ultimo, o botao de adicionar. */
+int atualizarSelecaoMusica(int *opcao_selecionada, int quantidade_musicas){
+    *opcao_selecionada = navegarOpcoes(*opcao_selecionada, quantidade_musicas + 1);
+
+    return IsKeyPressed(TECLA_CONFIRMAR);
+}
+
+void desenharSelecaoMusica(char **caminhos_musicas, int quantidade_musicas, int opcao_selecionada, const char *mensagem){
+    int centro_x = LARGURA_JANELA / 2;
+    int total_opcoes = quantidade_musicas + 1;
+
+    DrawRectangle(0, 0, LARGURA_JANELA, ALTURA_JANELA, COR_FUNDO_MENU);
+
+    desenharTextoCentralizado("Escolha a musica", centro_x, POSICAO_Y_TITULO_MENU, TAMANHO_FONTE_TITULO, COR_TEXTO_DESTAQUE);
+
+    // Mostra no maximo MAXIMO_MUSICAS_VISIVEIS linhas, rolando junto com a selecao
+    int primeira_visivel = 0;
+    if(opcao_selecionada >= MAXIMO_MUSICAS_VISIVEIS){
+        primeira_visivel = opcao_selecionada - MAXIMO_MUSICAS_VISIVEIS + 1;
+    }
+
+    int posicao_y = POSICAO_Y_LISTA_MUSICAS;
+
+    for(int opcao = primeira_visivel; opcao < total_opcoes && opcao < primeira_visivel + MAXIMO_MUSICAS_VISIVEIS; opcao++){
+        char texto[TAMANHO_MAXIMO_NOME_MUSICA];
+
+        if(opcao < quantidade_musicas){
+            montarNomeExibicao(texto, TAMANHO_MAXIMO_NOME_MUSICA, caminhos_musicas[opcao]);
+        }else{
+            TextCopy(texto, "+ Adicionar musica");
+        }
+
+        if(opcao == opcao_selecionada){
+            desenharTextoCentralizado(TextFormat("> %s <", texto), centro_x, posicao_y, TAMANHO_FONTE_TEXTO, COR_TEXTO_DESTAQUE);
+        }else{
+            desenharTextoCentralizado(texto, centro_x, posicao_y, TAMANHO_FONTE_TEXTO, Fade(COR_TEXTO, OPACIDADE_OPCAO_MENU));
+        }
+        posicao_y += ESPACO_LINHAS_MENU;
+    }
+
+    if(primeira_visivel + MAXIMO_MUSICAS_VISIVEIS < total_opcoes){
+        desenharTextoCentralizado("...", centro_x, posicao_y, TAMANHO_FONTE_TEXTO, Fade(COR_TEXTO, OPACIDADE_OPCAO_MENU));
+    }
+
+    if(mensagem[0] != '\0'){
+        desenharTextoCentralizado(mensagem, centro_x, ALTURA_JANELA - MARGEM_TELA - 3 * TAMANHO_FONTE_INFO - 2 * MARGEM_TELA, TAMANHO_FONTE_INFO, COR_PERFEITO);
+    }
+
+    desenharTextoCentralizado("Ou arraste um arquivo .mp3, .ogg ou .wav para a janela", centro_x, ALTURA_JANELA - MARGEM_TELA - 2 * TAMANHO_FONTE_INFO - MARGEM_TELA, TAMANHO_FONTE_INFO, COR_TEXTO);
+
+    desenharTextoCentralizado("Setas para escolher, ENTER para confirmar, BACKSPACE para voltar", centro_x, ALTURA_JANELA - MARGEM_TELA - TAMANHO_FONTE_INFO, TAMANHO_FONTE_INFO, Fade(COR_TEXTO, OPACIDADE_OPCAO_MENU));
 }
