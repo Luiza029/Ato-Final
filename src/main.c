@@ -3,6 +3,10 @@
 #include "constantes_raylib.h"
 #include "jogo.h"
 #include "interface.h"
+#include "constantes_raylib.h"
+#include <stdlib.h>
+#include <time.h>
+#define CAMINHO_MUSICA_PADRAO "assets/musica_fase1.ogg"
 #include "menu.h"
 
 typedef enum Tela{
@@ -23,6 +27,7 @@ int main(void){
     InitWindow(LARGURA_JANELA, ALTURA_JANELA, TITULO_JANELA);
     InitAudioDevice();
     SetTargetFPS(FPS_ALVO);
+    srand((unsigned int)time(NULL));
     carregarMenu();
 
     Music musica = { 0 };
