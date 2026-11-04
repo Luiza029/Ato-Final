@@ -13,64 +13,108 @@ static const char *LINHAS_COMO_JOGAR[] = {
     "Aperte D, F, J e K quando a nota chegar na linha.",
     "Acertos afastam o assassino. Erros o aproximam.",
     "Errou demais? O assassino joga notas extras na pauta.",
-    "R: rewind, volta algumas notas (usos limitados).",
+    "ESPACO: rewind, volta algumas notas (usos limitados).",
     "Se o assassino te alcancar, fim de jogo."
 };
 #define QUANTIDADE_LINHAS_COMO_JOGAR (int)(sizeof(LINHAS_COMO_JOGAR) / sizeof(LINHAS_COMO_JOGAR[0]))
 
-static void desenharTextoCentralizado(const char *texto, int posicao_y, int tamanho, Color cor){
+static Texture2D textura_fundo_menu;
+static bool tem_fundo_menu = false;
+
+static void desenharTextoCentralizado(const char *texto, int centro_x, int posicao_y, int tamanho, Color cor){
     int largura_texto = MeasureText(texto, tamanho);
-    DrawText(texto, (LARGURA_JANELA - largura_texto) / 2, posicao_y, tamanho, cor);
+    DrawText(texto, centro_x - largura_texto / 2, posicao_y, tamanho, cor);
+}
+
+void carregarMenu(void){
+    if(FileExists(CAMINHO_FUNDO_MENU)){
+        textura_fundo_menu = LoadTexture(CAMINHO_FUNDO_MENU);
+        tem_fundo_menu = true;
+    }
+}
+
+void descarregarMenu(void){
+    if(tem_fundo_menu){
+        UnloadTexture(textura_fundo_menu);
+        tem_fundo_menu = false;
+    }
+}
+
+static void desenharArteMenu(void){
+    int centro_area_arte = LARGURA_COLUNA_MENU + (LARGURA_JANELA - LARGURA_COLUNA_MENU) / 2;
+
+    if(!tem_fundo_menu){
+        desenharTextoCentralizado(TITULO_JANELA, centro_area_arte, (ALTURA_JANELA - TAMANHO_FONTE_TITULO) / 2,
+                                  TAMANHO_FONTE_TITULO, COR_TEXTO_DESTAQUE);
+        return;
+    }
+
+    float escala = (float)ALTURA_JANELA / (float)textura_fundo_menu.height;
+    if(escala >= 1.0f){
+        escala = (float)(int)escala;
+    }
+
+    float largura_arte = textura_fundo_menu.width * escala;
+    float altura_arte = textura_fundo_menu.height * escala;
+    Vector2 posicao = { LARGURA_JANELA - largura_arte, (ALTURA_JANELA - altura_arte) / 2.0f };
+
+    DrawTextureEx(textura_fundo_menu, posicao, 0.0f, escala, WHITE);
 }
 
 int atualizarMenu(OpcaoMenu *opcao_selecionada){
     int opcao = (int)*opcao_selecionada;
 
-    if(IsKeyPressed(KEY_DOWN)){
+    if(IsKeyPressed(TECLA_MENU_BAIXO)){
         opcao = (opcao + 1) % QUANTIDADE_OPCOES_MENU;
     }
-    if(IsKeyPressed(KEY_UP)){
+    if(IsKeyPressed(TECLA_MENU_CIMA)){
         opcao = (opcao - 1 + QUANTIDADE_OPCOES_MENU) % QUANTIDADE_OPCOES_MENU;
     }
 
     *opcao_selecionada = (OpcaoMenu)opcao;
 
-    return IsKeyPressed(KEY_ENTER);
+    return IsKeyPressed(TECLA_CONFIRMAR);
 }
 
 void desenharMenu(OpcaoMenu opcao_selecionada){
-    DrawRectangle(0, 0, LARGURA_JANELA, ALTURA_JANELA, COR_FUNDO_CENA);
+    DrawRectangle(0, 0, LARGURA_JANELA, ALTURA_JANELA, COR_FUNDO_MENU);
+    desenharArteMenu();
 
-    desenharTextoCentralizado(TITULO_JANELA, POSICAO_Y_TITULO_MENU, TAMANHO_FONTE_TITULO, COR_TEXTO_DESTAQUE);
+    int altura_opcoes = QUANTIDADE_OPCOES_MENU * ESPACO_OPCOES_MENU;
+    int posicao_y = (ALTURA_JANELA - altura_opcoes) / 2;
+    int largura_marcador = MeasureText("> ", TAMANHO_FONTE_OPCOES_MENU);
 
     for(int opcao = 0; opcao < QUANTIDADE_OPCOES_MENU; opcao++){
-        int posicao_y = POSICAO_Y_OPCOES_MENU + opcao * ESPACO_LINHAS_MENU;
-
         if(opcao == (int)opcao_selecionada){
-            desenharTextoCentralizado(TextFormat("> %s <", TEXTOS_OPCOES[opcao]), posicao_y, TAMANHO_FONTE_TEXTO, COR_PERFEITO);
+            DrawText(">", POSICAO_X_OPCOES_MENU - largura_marcador, posicao_y, TAMANHO_FONTE_OPCOES_MENU, COR_TEXTO_DESTAQUE);
+            DrawText(TEXTOS_OPCOES[opcao], POSICAO_X_OPCOES_MENU, posicao_y, TAMANHO_FONTE_OPCOES_MENU, COR_TEXTO_DESTAQUE);
         }else{
-            desenharTextoCentralizado(TEXTOS_OPCOES[opcao], posicao_y, TAMANHO_FONTE_TEXTO, COR_TEXTO);
+            DrawText(TEXTOS_OPCOES[opcao], POSICAO_X_OPCOES_MENU, posicao_y, TAMANHO_FONTE_OPCOES_MENU,
+                     Fade(COR_TEXTO, OPACIDADE_OPCAO_MENU));
         }
+        posicao_y += ESPACO_OPCOES_MENU;
     }
 
-    desenharTextoCentralizado("Setas para escolher, ENTER para confirmar",
-                              ALTURA_JANELA - MARGEM_TELA - TAMANHO_FONTE_INFO, TAMANHO_FONTE_INFO, COR_TEXTO);
+    DrawText("Setas para escolher, ENTER para confirmar", MARGEM_TELA,
+             ALTURA_JANELA - MARGEM_TELA - TAMANHO_FONTE_INFO, TAMANHO_FONTE_INFO, Fade(COR_TEXTO, OPACIDADE_OPCAO_MENU));
 }
 
 void desenharComoJogar(void){
-    DrawRectangle(0, 0, LARGURA_JANELA, ALTURA_JANELA, COR_FUNDO_CENA);
+    int centro_x = LARGURA_JANELA / 2;
 
-    desenharTextoCentralizado("Como jogar", POSICAO_Y_TITULO_MENU, TAMANHO_FONTE_TITULO, COR_TEXTO_DESTAQUE);
+    DrawRectangle(0, 0, LARGURA_JANELA, ALTURA_JANELA, COR_FUNDO_MENU);
+
+    desenharTextoCentralizado("Como jogar", centro_x, POSICAO_Y_TITULO_MENU, TAMANHO_FONTE_TITULO, COR_TEXTO_DESTAQUE);
 
     int posicao_y = POSICAO_Y_TITULO_MENU + TAMANHO_FONTE_TITULO + ESPACO_LINHAS_MENU;
     for(int linha = 0; linha < QUANTIDADE_LINHAS_COMO_JOGAR; linha++){
-        desenharTextoCentralizado(LINHAS_COMO_JOGAR[linha], posicao_y, TAMANHO_FONTE_TEXTO, COR_TEXTO);
+        desenharTextoCentralizado(LINHAS_COMO_JOGAR[linha], centro_x, posicao_y, TAMANHO_FONTE_TEXTO, COR_TEXTO);
         posicao_y += ESPACO_LINHAS_MENU;
     }
 
     desenharTextoCentralizado(TextFormat("Acerte pelo menos %.0f%% das notas para escapar.", PERCENTUAL_MINIMO_VITORIA * 100.0f),
-                              posicao_y, TAMANHO_FONTE_TEXTO, COR_PERFEITO);
+                              centro_x, posicao_y, TAMANHO_FONTE_TEXTO, COR_PERFEITO);
 
-    desenharTextoCentralizado("ENTER para voltar",
+    desenharTextoCentralizado("ENTER para voltar", centro_x,
                               ALTURA_JANELA - MARGEM_TELA - TAMANHO_FONTE_INFO, TAMANHO_FONTE_INFO, COR_TEXTO);
 }

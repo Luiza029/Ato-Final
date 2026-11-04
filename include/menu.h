@@ -8,14 +8,10 @@ typedef enum OpcaoMenu{
     QUANTIDADE_OPCOES_MENU
 } OpcaoMenu;
 
-/* Desenha o menu destacando a opcao selecionada. */
+void carregarMenu(void);
+void descarregarMenu(void);
 void desenharMenu(OpcaoMenu opcao_selecionada);
-
-/* Le as setas do teclado e atualiza a opcao selecionada.
-   Retorna 1 quando o jogador confirma e 0 caso contrario. */
 int atualizarMenu(OpcaoMenu *opcao_selecionada);
-
-/* Tela com as instrucoes do jogo. */
 void desenharComoJogar(void);
 
 #endif

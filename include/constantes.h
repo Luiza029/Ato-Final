@@ -64,6 +64,8 @@
 
 //                       ARQUIVOS
 #define CAMINHO_MAPA_PADRAO "mapas/mapa_fase1.txt"
+#define CAMINHO_FUNDO_MENU "assets/menu_fundo.png"
+#define CAMINHO_MUSICA_PADRAO "assets/musica_fase1.ogg"
 
 //                        INTERFACE
 #define MARGEM_TELA 20
@@ -96,4 +98,10 @@
 #define POSICAO_Y_TITULO_MENU 120
 #define POSICAO_Y_OPCOES_MENU 320
 #define ESPACO_LINHAS_MENU 50
+
+#define LARGURA_COLUNA_MENU (LARGURA_JANELA - ALTURA_JANELA)
+#define POSICAO_X_OPCOES_MENU 110
+#define TAMANHO_FONTE_OPCOES_MENU 44
+#define ESPACO_OPCOES_MENU 72
+#define OPACIDADE_OPCAO_MENU 0.6f
 #endif
