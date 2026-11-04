@@ -5,6 +5,7 @@
 #include "ordenacao.h"
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 int iniciarJogo(EstadoJogo *jogo, const char *caminho_mapa) {
   criarLista(&jogo->lista);
@@ -68,7 +69,7 @@ static void registrarAcerto(EstadoJogo *jogo, EstadoNota resultado) {
   jogo->tempo_feedback = DURACAO_FEEDBACK;
 }
 
-static void registrarErro(EstadoJogo *jogo, int nota_era_injetada) {
+static void registrarErro(EstadoJogo *jogo) {
   jogo->combo = 0;
   jogo->acertos_seguidos = 0;
   jogo->multiplicador = 1;
@@ -79,9 +80,7 @@ static void registrarErro(EstadoJogo *jogo, int nota_era_injetada) {
     jogo->distancia_assassino = DISTANCIA_MINIMA_ASSASSINO;
   }
 
-  if (!nota_era_injetada) {
-    jogo->erros_acumulados++;
-  }
+  jogo->erros_acumulados++;
 
   jogo->ultimo_julgamento = ERRADO;
   jogo->tempo_feedback = DURACAO_FEEDBACK;
@@ -95,7 +94,7 @@ void tratarTeclaLane(EstadoJogo *jogo, int lane) {
   Nota *nota = buscarNota(&jogo->lista, lane, jogo->tempo_atual);
 
   if (nota == NULL) {
-    registrarErro(jogo, 0);
+    registrarErro(jogo);
     return;
   }
 
@@ -147,16 +146,79 @@ void verificarFimDeJogo(EstadoJogo *jogo) {
   }
 }
 
+static Nota *buscarNotaBaseInjecao(EstadoJogo *jogo) {
+  float tempo_minimo = jogo->tempo_atual + ANTECEDENCIA_INJECAO;
+  Nota *nota = jogo->lista.cursor;
+
+  while (nota != NULL) {
+    if (!nota->injetada && nota->tempo >= tempo_minimo) {
+      return nota;
+    }
+
+    nota = nota->proximo;
+  }
+
+  return NULL;
+}
+
+static int sortearLaneLivre(const int lane_ocupada[QUANTIDADE_LANES]) {
+  int lanes_livres = 0;
+  for (int lane = 0; lane < QUANTIDADE_LANES; lane++) {
+    if (!lane_ocupada[lane]) {
+      lanes_livres++;
+    }
+  }
+
+  if (lanes_livres == 0) {
+    return -1;
+  }
+
+  int sorteio = rand() % lanes_livres;
+  for (int lane = 0; lane < QUANTIDADE_LANES; lane++) {
+    if (lane_ocupada[lane]) {
+      continue;
+    }
+
+    if (sorteio == 0) {
+      return lane;
+    }
+
+    sorteio--;
+  }
+
+  return -1;
+}
+
 void injetarNotas(EstadoJogo *jogo) {
   if (jogo->erros_acumulados < ERROS_PARA_INJECAO) {
     return;
   }
 
-  for (int i = 0; i < NOTAS_POR_INJECAO; i++) {
-    float tempo = jogo->tempo_atual + ANTECEDENCIA_INJECAO +
-                  INTERVALO_NOTAS_INJETADAS * i;
-    int lane = i % QUANTIDADE_LANES;
-    inserirNota(&jogo->lista, tempo, lane, 1);
+  Nota *base = buscarNotaBaseInjecao(jogo);
+  if (base == NULL) {
+    return;
+  }
+
+  float tempo_injecao = base->tempo;
+  int lane_ocupada[QUANTIDADE_LANES] = {0};
+  Nota *mesma_batida = base;
+  while (mesma_batida != NULL &&
+         fabsf(mesma_batida->tempo - tempo_injecao) <= TOLERANCIA_MESMO_TEMPO) {
+    lane_ocupada[mesma_batida->lane] = 1;
+    mesma_batida = mesma_batida->proximo;
+  }
+
+  int quantidade = NOTAS_MINIMAS_INJECAO + rand() % (NOTAS_MAXIMAS_INJECAO - NOTAS_MINIMAS_INJECAO + 1);
+
+  for (int i = 0; i < quantidade; i++) {
+    int lane = sortearLaneLivre(lane_ocupada);
+
+    if (lane == -1) {
+      break;
+    }
+
+    inserirNota(&jogo->lista, tempo_injecao, lane, 1);
+    lane_ocupada[lane] = 1;
   }
 
   ordenarNotas(&jogo->lista);
@@ -255,12 +317,16 @@ void atualizarJogo(EstadoJogo *jogo, float delta_tempo) {
     return;
   }
 
+  if (!(jogo->fase == FASE_JOGANDO)) {
+    return;
+  }
+
   Nota *nota = jogo->lista.cursor;
 
   while (nota != NULL) {
     if (nota->estado == PENDENTE) {
       if (jogo->tempo_atual > nota->tempo + JANELA_BOM) {
-        registrarErro(jogo, nota->injetada);
+        registrarErro(jogo);
         atualizarEstadoNota(nota, ERRADO);
       }
 

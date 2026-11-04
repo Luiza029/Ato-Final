@@ -44,9 +44,10 @@
 
 //                        INJEÇÃO
 #define ERROS_PARA_INJECAO 10
-#define NOTAS_POR_INJECAO 4
+#define NOTAS_MINIMAS_INJECAO 1
+#define NOTAS_MAXIMAS_INJECAO 2
 #define ANTECEDENCIA_INJECAO 1.5f
-#define INTERVALO_NOTAS_INJETADAS 0.30f
+#define TOLERANCIA_MESMO_TEMPO 0.001f
 
 //                        REWIND
 #define REWINDS_MAXIMOS 3
