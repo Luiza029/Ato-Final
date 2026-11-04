@@ -24,6 +24,8 @@ static const char *const ROTULOS_LANES[QUANTIDADE_LANES] = { "D", "F", "J", "K" 
 #define TECLA_VOLTAR      KEY_BACKSPACE
 #define TECLA_MENU_CIMA   KEY_UP
 #define TECLA_MENU_BAIXO  KEY_DOWN
+#define TECLA_MENU_ESQUERDA KEY_LEFT
+#define TECLA_MENU_DIREITA  KEY_RIGHT
 
 /* ---------- CORES ---------- */
 // Formato: (Color){ vermelho, verde, azul, transparência }, cada valor de 0 a 255
@@ -54,4 +56,4 @@ static const Color CORES_LANES[QUANTIDADE_LANES] = {
 #define COR_BOM               (Color){ 90, 220, 120, 255 }
 #define COR_ERRADO            (Color){ 220, 50, 50, 255 }
 
-#endif
+#endif

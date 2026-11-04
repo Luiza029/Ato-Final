@@ -14,6 +14,7 @@
 typedef enum Tela{
     TELA_MENU,
     TELA_COMO_JOGAR,
+    TELA_VOLUME,
     TELA_MUSICA,
     TELA_DIFICULDADE,
     TELA_JOGO
@@ -63,12 +64,51 @@ static void processarMusicaNova(const char *caminho_origem, FilePathList *musica
     snprintf(mensagem, TAMANHO_MENSAGEM_MUSICA, "Musica adicionada: %s", nome);
 }
 
+/* Comeca a tocar, em loop, um trecho da musica selecionada para o jogador ouvir enquanto ajusta o volume.
+   Retorna true se ha musica para tocar. */
+static bool abrirPreviaVolume(Music *previa, const FilePathList *musicas, int opcao_musica, char *nome_previa){
+    nome_previa[0] = '\0';
+
+    if(musicas->count == 0){
+        return false;
+    }
+
+    // Se o "Adicionar musica" estava selecionado, usa a primeira musica da lista
+    if(opcao_musica < 0 || opcao_musica >= (int)musicas->count){
+        opcao_musica = 0;
+    }
+
+    *previa = LoadMusicStream(musicas->paths[opcao_musica]);
+
+    if(!IsMusicValid(*previa)){
+        return false;
+    }
+
+    previa->looping = true;
+    PlayMusicStream(*previa);
+
+    if(GetMusicTimeLength(*previa) > INICIO_PREVIA_VOLUME){
+        SeekMusicStream(*previa, INICIO_PREVIA_VOLUME);
+    }
+
+    montarNomeExibicao(nome_previa, TAMANHO_MAXIMO_NOME_MUSICA, musicas->paths[opcao_musica]);
+    return true;
+}
+
 int main(void){
     InitWindow(LARGURA_JANELA, ALTURA_JANELA, TITULO_JANELA);
     InitAudioDevice();
     SetTargetFPS(FPS_ALVO);
     srand((unsigned int)time(NULL));
     carregarMenu();
+
+    // Volume geral do jogo (de 0 a 100%), guardado entre uma execucao e outra
+    int volume = carregarVolume();
+    SetMasterVolume((float)volume / VOLUME_MAXIMO);
+
+    Music previa_volume = { 0 };
+    bool tem_previa_volume = false;
+    char nome_previa_volume[TAMANHO_MAXIMO_NOME_MUSICA] = "";
 
     FilePathList musicas = carregarListaMusicas();
     int opcao_musica = 0;
@@ -101,7 +141,7 @@ int main(void){
         }
 
         // Musica arrastada para a janela (fora da partida): vai para a tela de musicas e e adicionada
-        if(IsFileDropped() && tela_atual != TELA_JOGO){
+        if(IsFileDropped() && tela_atual != TELA_JOGO && tela_atual != TELA_VOLUME){
             FilePathList arquivos = LoadDroppedFiles();
 
             if(arquivos.count > 0){
@@ -122,6 +162,10 @@ int main(void){
                 else if(opcao_menu == MENU_COMO_JOGAR){
                     tela_atual = TELA_COMO_JOGAR;
                 }
+                else if(opcao_menu == MENU_VOLUME){
+                    tem_previa_volume = abrirPreviaVolume(&previa_volume, &musicas, opcao_musica, nome_previa_volume);
+                    tela_atual = TELA_VOLUME;
+                }
                 else{
                     rodando = false;
                 }
@@ -130,6 +174,28 @@ int main(void){
 
         else if(tela_atual == TELA_COMO_JOGAR){
             if(IsKeyPressed(TECLA_CONFIRMAR)){
+                tela_atual = TELA_MENU;
+            }
+        }
+
+        else if(tela_atual == TELA_VOLUME){
+            // SetMasterVolume muda o volume de todo o audio do jogo na hora, inclusive da previa
+            if(atualizarVolume(&volume)){
+                SetMasterVolume((float)volume / VOLUME_MAXIMO);
+            }
+
+            if(tem_previa_volume){
+                UpdateMusicStream(previa_volume);
+            }
+
+            if(IsKeyPressed(TECLA_CONFIRMAR) || IsKeyPressed(TECLA_VOLTAR)){
+                salvarVolume(volume);
+
+                if(tem_previa_volume){
+                    UnloadMusicStream(previa_volume);
+                    tem_previa_volume = false;
+                }
+
                 tela_atual = TELA_MENU;
             }
         }
@@ -255,6 +321,10 @@ int main(void){
             desenharComoJogar();
         }
 
+        else if(tela_atual == TELA_VOLUME){
+            desenharVolume(volume, nome_previa_volume);
+        }
+
         else if(tela_atual == TELA_MUSICA){
             desenharSelecaoMusica(musicas.paths, (int)musicas.count, opcao_musica, mensagem_musica);
         }
@@ -280,6 +350,10 @@ int main(void){
 
     if(tem_musica){
         UnloadMusicStream(musica);
+    }
+
+    if(tem_previa_volume){
+        UnloadMusicStream(previa_volume);
     }
 
     descarregarListaMusicas(musicas);
