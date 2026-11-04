@@ -183,8 +183,17 @@ int main(void){
                     }
 
                     else if(musica_pausada){
+                        // Resume continua a musica pausada. PlayMusicStream nao serve aqui:
+                        // ele recomeca a musica do inicio e desfaz o SeekMusicStream.
                         SeekMusicStream(musica, jogo.tempo_atual);
-                        PlayMusicStream(musica);
+                        ResumeMusicStream(musica);
+
+                        // Se a musica ja tinha acabado (rewind na espera do fim), ela precisa tocar de novo
+                        if(!IsMusicStreamPlaying(musica)){
+                            PlayMusicStream(musica);
+                            SeekMusicStream(musica, jogo.tempo_atual);
+                        }
+
                         musica_pausada = false;
                     }
 
