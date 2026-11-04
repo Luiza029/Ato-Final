@@ -58,7 +58,7 @@
 #define PERCENTUAL_MINIMO_VITORIA 0.75f
 
 //                     TEMPO DE APOIO
-#define SILENCIO_INICIAL 3.0f
+#define SILENCIO_INICIAL 4.2f
 #define DURACAO_FEEDBACK 0.4f
 #define ESPERA_FIM_DA_MUSICA 2.0f
 
