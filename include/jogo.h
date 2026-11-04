@@ -26,7 +26,9 @@ typedef struct EstadoJogo{
     int acertos_seguidos;       
     int rewinds_restantes;
     EstadoNota ultimo_julgamento;
-    float tempo_feedback;        
+    float tempo_feedback;
+    float tempo_inicio_rewind;
+    float tempo_alvo_rewind;    
 } EstadoJogo;
 
 /* Prepara a partida: zera o estado, carrega o mapa e ordena as notas.

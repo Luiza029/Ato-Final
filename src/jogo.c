@@ -28,6 +28,8 @@ int iniciarJogo(EstadoJogo *jogo, const char *caminho_mapa) {
 
   jogo->ultimo_julgamento = PENDENTE;
   jogo->tempo_feedback = 0;
+  jogo->tempo_inicio_rewind = 0;
+  jogo->tempo_alvo_rewind = 0;
 
   return 1;
 }
@@ -118,21 +120,30 @@ void verificarFimDeJogo(EstadoJogo *jogo) {
     return;
   }
 
-  // Se o assassino alcançou.
   if (jogo->distancia_assassino <= DISTANCIA_MINIMA_ASSASSINO) {
     jogo->fase = FASE_DERROTA;
     return;
   }
 
-  // Se as notas acabaram (cursor passou da última nota).
-  if (jogo->lista.cursor == NULL) {
-    if (calcularPercentualAcertos(&jogo->lista) >= PERCENTUAL_MINIMO_VITORIA) {
-      jogo->fase = FASE_VITORIA;
-    }
+  if (jogo->lista.cursor != NULL) {
+    return;
+  }
 
-    else {
-      jogo->fase = FASE_DERROTA;
-    }
+  float tempo_ultima_nota = 0.0f;
+  if (jogo->lista.fim != NULL) {
+    tempo_ultima_nota = jogo->lista.fim->tempo;
+  }
+
+  if (jogo->tempo_atual < tempo_ultima_nota + ESPERA_FIM_DA_MUSICA) {
+    return;
+  }
+
+  if (calcularPercentualAcertos(&jogo->lista) >= PERCENTUAL_MINIMO_VITORIA) {
+    jogo->fase = FASE_VITORIA;
+  }
+
+  else {
+    jogo->fase = FASE_DERROTA;
   }
 }
 
@@ -152,19 +163,60 @@ void injetarNotas(EstadoJogo *jogo) {
   jogo->erros_acumulados = 0;
 }
 
+static void descontarPontosDoRewind(EstadoJogo *jogo) {
+  Nota *nota = jogo->lista.cursor;
+
+  for (int i = 0; i < NOTAS_POR_REWIND; i++) {
+    if (nota == NULL) {
+      nota = jogo->lista.fim;
+    }
+
+    else if (nota->anterior != NULL) {
+      nota = nota->anterior;
+    }
+
+    else {
+      break;
+    }
+
+    if (nota == NULL) {
+      break;
+    }
+
+    if (nota->estado == PERFEITO) {
+      jogo->pontuacao -= PONTOS_PERFEITO;
+    }
+
+    else if (nota->estado == BOM) {
+      jogo->pontuacao -= PONTOS_BOM;
+    }
+  }
+}
+
 void usarRewind(EstadoJogo *jogo) {
   if (jogo->fase != FASE_JOGANDO || jogo->rewinds_restantes <= 0) {
     return;
   }
 
+  Nota *cursor_antes = jogo->lista.cursor;
+
+  descontarPontosDoRewind(jogo);
   voltarCursor(&jogo->lista, NOTAS_POR_REWIND);
 
-  if (jogo->lista.cursor == NULL) {
+  // Nada para voltar (lista vazia ou cursor ja no inicio): nao gasta o rewind.
+  if (jogo->lista.cursor == cursor_antes) {
     return;
   }
 
   jogo->rewinds_restantes--;
-  jogo->tempo_atual = jogo->lista.cursor->tempo - RESPIRO_APOS_REWIND;
+
+  jogo->distancia_assassino = DISTANCIA_MAXIMA_ASSASSINO;
+  jogo->combo = 0;
+  jogo->multiplicador = 1;
+  jogo->acertos_seguidos = 0;
+
+  jogo->tempo_inicio_rewind = jogo->tempo_atual;
+  jogo->tempo_alvo_rewind = jogo->lista.cursor->tempo - RESPIRO_APOS_REWIND;
 
   jogo->fase = FASE_REWIND;
   jogo->temporizador_fase = 0;
@@ -188,14 +240,18 @@ void atualizarJogo(EstadoJogo *jogo, float delta_tempo) {
   if (jogo->fase == FASE_REWIND) {
     jogo->temporizador_fase += delta_tempo;
 
-    if (jogo->temporizador_fase >= DURACAO_ANIMACAO_REWIND) {
+    float progresso = jogo->temporizador_fase / DURACAO_ANIMACAO_REWIND;
+
+    if (progresso >= 1.0f) {
+      jogo->tempo_atual = jogo->tempo_alvo_rewind;
       jogo->fase = FASE_JOGANDO;
     }
 
-    return;
-  }
+    else {
+      jogo->tempo_atual = jogo->tempo_inicio_rewind +
+      (jogo->tempo_alvo_rewind - jogo->tempo_inicio_rewind) * progresso;
+    }
 
-  if (!(jogo->fase == FASE_JOGANDO)) {
     return;
   }
 
