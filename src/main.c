@@ -2,9 +2,8 @@
 #include "constantes.h"
 #include "jogo.h"
 #include "interface.h"
+#include "constantes_raylib.h"
 #define CAMINHO_MUSICA_PADRAO "assets/musica_fase1.ogg"
-
-int TECLAS_LANE[QUANTIDADE_LANES] = {KEY_D, KEY_F, KEY_J, KEY_K};
 
 int main(void){
     InitWindow(LARGURA_JANELA, ALTURA_JANELA, TITULO_JANELA);
@@ -49,9 +48,13 @@ int main(void){
                 }
                 
                 for(int i=0; i<QUANTIDADE_LANES; i++){
-                    if(IsKeyPressed(TECLAS_LANE[i])){
+                    if(IsKeyPressed(TECLAS_LANES[i])){
                         tratarTeclaLane(&jogo, i);
                     }
+                }
+
+                if(IsKeyPressed(TECLA_REWIND)){
+                    usarRewind(&jogo);
                 }
             }
             
