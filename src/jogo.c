@@ -32,6 +32,12 @@ int iniciarJogo(EstadoJogo *jogo, const char *caminho_mapa) {
   jogo->tempo_inicio_rewind = 0;
   jogo->tempo_alvo_rewind = 0;
 
+  for (int lane = 0; lane < QUANTIDADE_LANES; lane++) {
+    jogo->tempo_efeito_lane[lane] = 0;
+    jogo->resultado_efeito_lane[lane] = PENDENTE;
+    jogo->semente_efeito_lane[lane] = 0;
+  }
+
   return 1;
 }
 
@@ -112,6 +118,11 @@ void tratarTeclaLane(EstadoJogo *jogo, int lane) {
   atualizarEstadoNota(nota, resultado);
 
   registrarAcerto(jogo, resultado);
+
+  // Respingo de sangue na linha de acerto da lane
+  jogo->tempo_efeito_lane[lane] = DURACAO_EFEITO_SANGUE;
+  jogo->resultado_efeito_lane[lane] = resultado;
+  jogo->semente_efeito_lane[lane] = (unsigned int)rand();
 }
 
 void verificarFimDeJogo(EstadoJogo *jogo) {
@@ -287,6 +298,12 @@ void usarRewind(EstadoJogo *jogo) {
 void atualizarJogo(EstadoJogo *jogo, float delta_tempo) {
   if (jogo->tempo_feedback > 0) {
     jogo->tempo_feedback -= delta_tempo;
+  }
+
+  for (int lane = 0; lane < QUANTIDADE_LANES; lane++) {
+    if (jogo->tempo_efeito_lane[lane] > 0) {
+      jogo->tempo_efeito_lane[lane] -= delta_tempo;
+    }
   }
 
   if (jogo->fase == FASE_SILENCIO_INICIAL) {

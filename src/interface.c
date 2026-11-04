@@ -1,4 +1,5 @@
 #include <stddef.h>
+#include <math.h>
 #include "raylib.h"
 #include "interface.h"
 #include "constantes.h"
@@ -34,6 +35,41 @@ static void desenharEfeitoRewind(void){
     desenharTextoCentralizado("<< REWIND", LARGURA_JANELA / 2, ALTURA_CENA / 2, TAMANHO_FONTE_TITULO, COR_TEXTO);
 }
 
+/* Número entre 0 e 1 a partir de uma semente (gerador congruente linear simples).
+   Cada respingo guarda a sua semente, então as gotas ficam iguais em todos os quadros
+   do mesmo respingo, mas cada acerto tem um desenho diferente. */
+static float sortearDaSemente(unsigned int *semente){
+    *semente = *semente * 1103515245u + 12345u;
+    return (float)((*semente >> 16) & 0x7FFF) / 32767.0f;
+}
+
+/* Respingo de sangue: uma mancha que cresce e some, e gotas que voam e caem. */
+static void desenharRespingoSangue(int lane, float tempo_restante, EstadoNota resultado, unsigned int semente){
+    float tempo_passado = DURACAO_EFEITO_SANGUE - tempo_restante;
+    float progresso = tempo_passado / DURACAO_EFEITO_SANGUE;   // 0 no acerto, 1 no fim
+    float opacidade = 1.0f - progresso;
+
+    Vector2 centro = { (float)POSICAO_X_LINHA_ACERTO, (float)calcularCentroYLane(lane) };
+
+    float raio_mancha = RAIO_MANCHA_SANGUE * (0.6f + 0.4f * progresso);
+    DrawCircleV(centro, raio_mancha, Fade(COR_SANGUE_ESCURO, OPACIDADE_MANCHA_SANGUE * opacidade));
+
+    int quantidade_gotas = (resultado == PERFEITO) ? GOTAS_SANGUE_PERFEITO : GOTAS_SANGUE_BOM;
+
+    for(int gota = 0; gota < quantidade_gotas; gota++){
+        float angulo = sortearDaSemente(&semente) * 2.0f * PI;
+        float velocidade = VELOCIDADE_MINIMA_GOTA + sortearDaSemente(&semente) * (VELOCIDADE_MAXIMA_GOTA - VELOCIDADE_MINIMA_GOTA);
+        float raio = RAIO_MINIMO_GOTA + sortearDaSemente(&semente) * (RAIO_MAXIMO_GOTA - RAIO_MINIMO_GOTA);
+
+        Vector2 posicao = {
+            centro.x + cosf(angulo) * velocidade * tempo_passado,
+            centro.y + sinf(angulo) * velocidade * tempo_passado + 0.5f * GRAVIDADE_GOTA * tempo_passado * tempo_passado
+        };
+
+        DrawCircleV(posicao, raio * (1.0f - 0.5f * progresso), Fade(COR_SANGUE, opacidade));
+    }
+}
+
 /* ---------- Funções públicas (declaradas em interface.h) ---------- */
 
 /* Cena de cima: sobrevivente e assassino. Por enquanto, retângulos no lugar da pixelart. */
@@ -58,12 +94,9 @@ void desenharBarraInfo(const EstadoJogo *jogo){
     int texto_y = POSICAO_Y_BARRA_INFO + (ALTURA_BARRA_INFO - TAMANHO_FONTE_INFO) / 2;
     int largura_coluna = LARGURA_JANELA / 4;
 
-    DrawText(TextFormat("Pontos: %d", jogo->pontuacao),
-             MARGEM_TELA, texto_y, TAMANHO_FONTE_INFO, COR_TEXTO);
-    DrawText(TextFormat("Combo: %d (x%d)", jogo->combo, jogo->multiplicador),
-             largura_coluna + MARGEM_TELA, texto_y, TAMANHO_FONTE_INFO, COR_TEXTO);
-    DrawText(TextFormat("Rewinds: %d", jogo->rewinds_restantes),
-             2 * largura_coluna + MARGEM_TELA, texto_y, TAMANHO_FONTE_INFO, COR_TEXTO);
+    DrawText(TextFormat("Pontos: %d", jogo->pontuacao), MARGEM_TELA, texto_y, TAMANHO_FONTE_INFO, COR_TEXTO);
+    DrawText(TextFormat("Combo: %d (x%d)", jogo->combo, jogo->multiplicador), largura_coluna + MARGEM_TELA, texto_y, TAMANHO_FONTE_INFO, COR_TEXTO);
+    DrawText(TextFormat("Rewinds: %d", jogo->rewinds_restantes), 2 * largura_coluna + MARGEM_TELA, texto_y, TAMANHO_FONTE_INFO, COR_TEXTO);
 
     /* Distância: um quadradinho por passo; os cheios mostram quanto falta para ser pego */
     const char *rotulo = "Distancia:";
@@ -74,8 +107,7 @@ void desenharBarraInfo(const EstadoJogo *jogo){
     int pip_y = POSICAO_Y_BARRA_INFO + (ALTURA_BARRA_INFO - TAMANHO_PIP_DISTANCIA) / 2;
     for(int passo = 0; passo < DISTANCIA_MAXIMA_ASSASSINO; passo++){
         Color cor_pip = (passo < jogo->distancia_assassino) ? COR_BOM : COR_LINHA_LANE;
-        DrawRectangle(pip_x + passo * (TAMANHO_PIP_DISTANCIA + ESPACO_PIP_DISTANCIA),
-                      pip_y, TAMANHO_PIP_DISTANCIA, TAMANHO_PIP_DISTANCIA, cor_pip);
+        DrawRectangle(pip_x + passo * (TAMANHO_PIP_DISTANCIA + ESPACO_PIP_DISTANCIA), pip_y, TAMANHO_PIP_DISTANCIA, TAMANHO_PIP_DISTANCIA, cor_pip);
     }
 }
 
@@ -109,12 +141,10 @@ void desenharPauta(const EstadoJogo *jogo){
         int centro_y = calcularCentroYLane(lane);
         DrawLine(0, centro_y, LARGURA_JANELA, centro_y, COR_LINHA_LANE);
         DrawCircleLines(POSICAO_X_LINHA_ACERTO, centro_y, TAMANHO_NOTA / 2, COR_LINHA_ACERTO);
-        DrawText(ROTULOS_LANES[lane], MARGEM_TELA, centro_y - TAMANHO_FONTE_INFO / 2,
-                 TAMANHO_FONTE_INFO, COR_TEXTO);
+        DrawText(ROTULOS_LANES[lane], MARGEM_TELA, centro_y - TAMANHO_FONTE_INFO / 2, TAMANHO_FONTE_INFO, COR_TEXTO);
     }
 
-    DrawRectangle(POSICAO_X_LINHA_ACERTO - ESPESSURA_LINHA_ACERTO / 2, POSICAO_Y_PAUTA,
-                  ESPESSURA_LINHA_ACERTO, ALTURA_PAUTA, COR_LINHA_ACERTO);
+    DrawRectangle(POSICAO_X_LINHA_ACERTO - ESPESSURA_LINHA_ACERTO / 2, POSICAO_Y_PAUTA,ESPESSURA_LINHA_ACERTO, ALTURA_PAUTA, COR_LINHA_ACERTO);
 
     /* A lista está ordenada por tempo: ao achar uma nota fora da tela pela direita,
        todas as seguintes também estão, então podemos parar. */
@@ -126,6 +156,15 @@ void desenharPauta(const EstadoJogo *jogo){
         desenharNota(atual, jogo->tempo_atual);
         atual = atual->proximo;
     }
+
+    /* Respingos por cima das notas, recortados para não sujar a barra de informações */
+    BeginScissorMode(0, POSICAO_Y_PAUTA, LARGURA_JANELA, ALTURA_PAUTA);
+    for(int lane = 0; lane < QUANTIDADE_LANES; lane++){
+        if(jogo->tempo_efeito_lane[lane] > 0.0f){
+            desenharRespingoSangue(lane, jogo->tempo_efeito_lane[lane], jogo->resultado_efeito_lane[lane], jogo->semente_efeito_lane[lane]);
+        }
+    }
+    EndScissorMode();
 }
 
 /* Texto PERFEITO / BOM / ERROU que some aos poucos. Supõe tempo_feedback em contagem regressiva. */
@@ -145,8 +184,7 @@ void desenharFeedback(const EstadoJogo *jogo){
     }
 
     float opacidade = jogo->tempo_feedback / DURACAO_FEEDBACK;
-    desenharTextoCentralizado(texto, LARGURA_JANELA / 2, ALTURA_CENA / 4,
-                              TAMANHO_FONTE_FEEDBACK, Fade(cor, opacidade));
+    desenharTextoCentralizado(texto, LARGURA_JANELA / 2, ALTURA_CENA / 4, TAMANHO_FONTE_FEEDBACK, Fade(cor, opacidade));
 }
 
 /* Tela completa da partida. Quem chama é responsável por BeginDrawing/EndDrawing. */
@@ -177,18 +215,11 @@ void desenharTelaFinal(const EstadoJogo *jogo){
     }
 
     DrawRectangle(0, 0, LARGURA_JANELA, ALTURA_JANELA, COR_FUNDO_CENA);
-    desenharTextoCentralizado(titulo, centro_x, ALTURA_JANELA / 5, TAMANHO_FONTE_TITULO,
-                              venceu ? COR_PERFEITO : COR_TEXTO_DESTAQUE);
+    desenharTextoCentralizado(titulo, centro_x, ALTURA_JANELA / 5, TAMANHO_FONTE_TITULO, venceu ? COR_PERFEITO : COR_TEXTO_DESTAQUE);
 
     float percentual = calcularPercentualAcertos(&jogo->lista);
 
-    desenharTextoCentralizado(TextFormat("Pontuacao: %d", jogo->pontuacao),
-                              centro_x, ALTURA_JANELA / 2 - TAMANHO_FONTE_TEXTO,
-                              TAMANHO_FONTE_TEXTO, COR_TEXTO);
-    desenharTextoCentralizado(TextFormat("Acertos: %.0f%% (minimo: %.0f%%)",
-                              percentual * 100.0f, PERCENTUAL_MINIMO_VITORIA * 100.0f),
-                              centro_x, ALTURA_JANELA / 2 + TAMANHO_FONTE_TEXTO,
-                              TAMANHO_FONTE_TEXTO, COR_TEXTO);
-    desenharTextoCentralizado("ENTER para voltar ao menu", centro_x, ALTURA_JANELA * 4 / 5,
-                              TAMANHO_FONTE_TEXTO, COR_TEXTO);
+    desenharTextoCentralizado(TextFormat("Pontuacao: %d", jogo->pontuacao), centro_x, ALTURA_JANELA / 2 - TAMANHO_FONTE_TEXTO, TAMANHO_FONTE_TEXTO, COR_TEXTO);
+    desenharTextoCentralizado(TextFormat("Acertos: %.0f%% (minimo: %.0f%%)", percentual * 100.0f, PERCENTUAL_MINIMO_VITORIA * 100.0f), centro_x, ALTURA_JANELA / 2 + TAMANHO_FONTE_TEXTO,TAMANHO_FONTE_TEXTO, COR_TEXTO);
+    desenharTextoCentralizado("ENTER para voltar ao menu", centro_x, ALTURA_JANELA * 4 / 5, TAMANHO_FONTE_TEXTO, COR_TEXTO);
 }

@@ -51,9 +51,13 @@ static const Color CORES_LANES[QUANTIDADE_LANES] = {
 #define COR_NOTA_INJETADA     (Color){ 255, 255, 255, 255 }
 #define COR_BORDA_INJETADA    (Color){ 200, 30, 30, 255 }
 
+// Respingo de sangue quando a nota e acertada
+#define COR_SANGUE            (Color){ 160, 10, 20, 255 }
+#define COR_SANGUE_ESCURO     (Color){ 90, 0, 8, 255 }
+
 // Feedback de julgamento
 #define COR_PERFEITO          (Color){ 255, 215, 0, 255 }
 #define COR_BOM               (Color){ 90, 220, 120, 255 }
 #define COR_ERRADO            (Color){ 220, 50, 50, 255 }
 
-#endif
+#endif
