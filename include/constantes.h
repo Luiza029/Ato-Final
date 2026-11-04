@@ -64,6 +64,11 @@
 
 //                       ARQUIVOS
 #define CAMINHO_MAPA_PADRAO "mapas/mapa_fase1.txt"
+
+// Mapa de cada dificuldade (por enquanto, todas usam o mapa de teste)
+#define CAMINHO_MAPA_FACIL   CAMINHO_MAPA_PADRAO
+#define CAMINHO_MAPA_MEDIO   CAMINHO_MAPA_PADRAO
+#define CAMINHO_MAPA_DIFICIL CAMINHO_MAPA_PADRAO
 #define CAMINHO_FUNDO_MENU "assets/menu_fundo.png"
 #define CAMINHO_MUSICA_PADRAO "assets/musica_fase1.ogg"
 

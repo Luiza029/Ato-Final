@@ -9,6 +9,18 @@ static const char *TEXTOS_OPCOES[QUANTIDADE_OPCOES_MENU] = {
     "Sair"
 };
 
+static const char *TEXTOS_DIFICULDADES[QUANTIDADE_DIFICULDADES] = {
+    "Facil",
+    "Medio",
+    "Dificil"
+};
+
+static const char *DESCRICOES_DIFICULDADES[QUANTIDADE_DIFICULDADES] = {
+    "Para aprender o ritmo.",
+    "Para quem ja pegou o jeito.",
+    "Para sobreviventes de verdade."
+};
+
 static const char *LINHAS_COMO_JOGAR[] = {
     "Aperte D, F, J e K quando a nota chegar na linha.",
     "Acertos afastam o assassino. Erros o aproximam.",
@@ -44,8 +56,7 @@ static void desenharArteMenu(void){
     int centro_area_arte = LARGURA_COLUNA_MENU + (LARGURA_JANELA - LARGURA_COLUNA_MENU) / 2;
 
     if(!tem_fundo_menu){
-        desenharTextoCentralizado(TITULO_JANELA, centro_area_arte, (ALTURA_JANELA - TAMANHO_FONTE_TITULO) / 2,
-                                  TAMANHO_FONTE_TITULO, COR_TEXTO_DESTAQUE);
+        desenharTextoCentralizado(TITULO_JANELA, centro_area_arte, (ALTURA_JANELA - TAMANHO_FONTE_TITULO) / 2, TAMANHO_FONTE_TITULO, COR_TEXTO_DESTAQUE);
         return;
     }
 
@@ -61,17 +72,25 @@ static void desenharArteMenu(void){
     DrawTextureEx(textura_fundo_menu, posicao, 0.0f, escala, WHITE);
 }
 
-int atualizarMenu(OpcaoMenu *opcao_selecionada){
-    int opcao = (int)*opcao_selecionada;
-
+static int navegarOpcoes(int opcao, int quantidade_opcoes){
     if(IsKeyPressed(TECLA_MENU_BAIXO)){
-        opcao = (opcao + 1) % QUANTIDADE_OPCOES_MENU;
+        opcao = (opcao + 1) % quantidade_opcoes;
     }
     if(IsKeyPressed(TECLA_MENU_CIMA)){
-        opcao = (opcao - 1 + QUANTIDADE_OPCOES_MENU) % QUANTIDADE_OPCOES_MENU;
+        opcao = (opcao - 1 + quantidade_opcoes) % quantidade_opcoes;
     }
 
-    *opcao_selecionada = (OpcaoMenu)opcao;
+    return opcao;
+}
+
+int atualizarMenu(OpcaoMenu *opcao_selecionada){
+    *opcao_selecionada = (OpcaoMenu)navegarOpcoes((int)*opcao_selecionada, QUANTIDADE_OPCOES_MENU);
+
+    return IsKeyPressed(TECLA_CONFIRMAR);
+}
+
+int atualizarSelecaoDificuldade(Dificuldade *dificuldade_selecionada){
+    *dificuldade_selecionada = (Dificuldade)navegarOpcoes((int)*dificuldade_selecionada, QUANTIDADE_DIFICULDADES);
 
     return IsKeyPressed(TECLA_CONFIRMAR);
 }
@@ -89,14 +108,12 @@ void desenharMenu(OpcaoMenu opcao_selecionada){
             DrawText(">", POSICAO_X_OPCOES_MENU - largura_marcador, posicao_y, TAMANHO_FONTE_OPCOES_MENU, COR_TEXTO_DESTAQUE);
             DrawText(TEXTOS_OPCOES[opcao], POSICAO_X_OPCOES_MENU, posicao_y, TAMANHO_FONTE_OPCOES_MENU, COR_TEXTO_DESTAQUE);
         }else{
-            DrawText(TEXTOS_OPCOES[opcao], POSICAO_X_OPCOES_MENU, posicao_y, TAMANHO_FONTE_OPCOES_MENU,
-                     Fade(COR_TEXTO, OPACIDADE_OPCAO_MENU));
+            DrawText(TEXTOS_OPCOES[opcao], POSICAO_X_OPCOES_MENU, posicao_y, TAMANHO_FONTE_OPCOES_MENU, Fade(COR_TEXTO, OPACIDADE_OPCAO_MENU));
         }
         posicao_y += ESPACO_OPCOES_MENU;
     }
 
-    DrawText("Setas para escolher, ENTER para confirmar", MARGEM_TELA,
-             ALTURA_JANELA - MARGEM_TELA - TAMANHO_FONTE_INFO, TAMANHO_FONTE_INFO, Fade(COR_TEXTO, OPACIDADE_OPCAO_MENU));
+    DrawText("Setas para escolher, ENTER para confirmar", MARGEM_TELA, ALTURA_JANELA - MARGEM_TELA - TAMANHO_FONTE_INFO, TAMANHO_FONTE_INFO, Fade(COR_TEXTO, OPACIDADE_OPCAO_MENU));
 }
 
 void desenharComoJogar(void){
@@ -112,9 +129,35 @@ void desenharComoJogar(void){
         posicao_y += ESPACO_LINHAS_MENU;
     }
 
-    desenharTextoCentralizado(TextFormat("Acerte pelo menos %.0f%% das notas para escapar.", PERCENTUAL_MINIMO_VITORIA * 100.0f),
-                              centro_x, posicao_y, TAMANHO_FONTE_TEXTO, COR_PERFEITO);
+    desenharTextoCentralizado(TextFormat("Acerte pelo menos %.0f%% das notas para escapar.", PERCENTUAL_MINIMO_VITORIA * 100.0f), centro_x, posicao_y, TAMANHO_FONTE_TEXTO, COR_PERFEITO);
 
-    desenharTextoCentralizado("ENTER para voltar", centro_x,
-                              ALTURA_JANELA - MARGEM_TELA - TAMANHO_FONTE_INFO, TAMANHO_FONTE_INFO, COR_TEXTO);
+    desenharTextoCentralizado("ENTER para voltar", centro_x, ALTURA_JANELA - MARGEM_TELA - TAMANHO_FONTE_INFO, TAMANHO_FONTE_INFO, COR_TEXTO);
+}
+
+
+void desenharSelecaoDificuldade(Dificuldade dificuldade_selecionada){
+    int centro_x = LARGURA_JANELA / 2;
+
+    DrawRectangle(0, 0, LARGURA_JANELA, ALTURA_JANELA, COR_FUNDO_MENU);
+
+    desenharTextoCentralizado("Escolha a dificuldade", centro_x, POSICAO_Y_TITULO_MENU, TAMANHO_FONTE_TITULO, COR_TEXTO_DESTAQUE);
+
+    int altura_opcoes = QUANTIDADE_DIFICULDADES * ESPACO_OPCOES_MENU;
+    int posicao_y = (ALTURA_JANELA - altura_opcoes) / 2;
+
+    for(int dificuldade = 0; dificuldade < QUANTIDADE_DIFICULDADES; dificuldade++){
+        if(dificuldade == (int)dificuldade_selecionada){
+            desenharTextoCentralizado(TextFormat("> %s <", TEXTOS_DIFICULDADES[dificuldade]), centro_x, posicao_y, TAMANHO_FONTE_OPCOES_MENU, COR_TEXTO_DESTAQUE);
+        }else{
+            desenharTextoCentralizado(TEXTOS_DIFICULDADES[dificuldade], centro_x, posicao_y,TAMANHO_FONTE_OPCOES_MENU, Fade(COR_TEXTO, OPACIDADE_OPCAO_MENU));
+        }
+        posicao_y += ESPACO_OPCOES_MENU;
+    }
+
+    desenharTextoCentralizado(DESCRICOES_DIFICULDADES[dificuldade_selecionada], centro_x, posicao_y + ESPACO_LINHAS_MENU,TAMANHO_FONTE_TEXTO, COR_TEXTO);
+
+    /* Aviso temporário: enquanto os mapas definitivos não ficam prontos */
+    desenharTextoCentralizado("Por enquanto, as tres dificuldades usam o mapa de teste.", centro_x, ALTURA_JANELA - MARGEM_TELA - 2 * TAMANHO_FONTE_INFO - MARGEM_TELA, TAMANHO_FONTE_INFO, COR_PERFEITO);
+
+    desenharTextoCentralizado("Setas para escolher, ENTER para jogar, BACKSPACE para voltar", centro_x, ALTURA_JANELA - MARGEM_TELA - TAMANHO_FONTE_INFO, TAMANHO_FONTE_INFO, Fade(COR_TEXTO, OPACIDADE_OPCAO_MENU));
 }

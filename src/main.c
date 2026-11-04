@@ -4,11 +4,20 @@
 #include "jogo.h"
 #include "interface.h"
 #include "menu.h"
+
 typedef enum Tela{
     TELA_MENU,
     TELA_COMO_JOGAR,
+    TELA_DIFICULDADE,
     TELA_JOGO
 } Tela;
+
+/* Mapa de cada dificuldade, na mesma ordem do enum Dificuldade */
+static const char *CAMINHOS_MAPAS[QUANTIDADE_DIFICULDADES] = {
+    CAMINHO_MAPA_FACIL,
+    CAMINHO_MAPA_MEDIO,
+    CAMINHO_MAPA_DIFICIL
+};
 
 int main(void){
     InitWindow(LARGURA_JANELA, ALTURA_JANELA, TITULO_JANELA);
@@ -28,6 +37,7 @@ int main(void){
     EstadoJogo jogo;
     Tela tela_atual = TELA_MENU;
     OpcaoMenu opcao_menu = MENU_JOGAR;
+    Dificuldade dificuldade = DIFICULDADE_FACIL;
     bool partida_ativa = false;   
     bool rodando = true;          
 
@@ -37,11 +47,7 @@ int main(void){
         if(tela_atual == TELA_MENU){
             if(atualizarMenu(&opcao_menu)){
                 if(opcao_menu == MENU_JOGAR){
-                    if(iniciarJogo(&jogo, CAMINHO_MAPA_PADRAO)){
-                        partida_ativa = true;
-                        musica_iniciada = false;
-                        tela_atual = TELA_JOGO;
-                    }
+                    tela_atual = TELA_DIFICULDADE;
                 }
                 else if(opcao_menu == MENU_COMO_JOGAR){
                     tela_atual = TELA_COMO_JOGAR;
@@ -54,6 +60,20 @@ int main(void){
 
         else if(tela_atual == TELA_COMO_JOGAR){
             if(IsKeyPressed(TECLA_CONFIRMAR)){
+                tela_atual = TELA_MENU;
+            }
+        }
+
+        else if(tela_atual == TELA_DIFICULDADE){
+            if(atualizarSelecaoDificuldade(&dificuldade)){
+                if(iniciarJogo(&jogo, CAMINHOS_MAPAS[dificuldade])){
+                    partida_ativa = true;
+                    musica_iniciada = false;
+                    tela_atual = TELA_JOGO;
+                }
+            }
+
+            else if(IsKeyPressed(TECLA_VOLTAR)){
                 tela_atual = TELA_MENU;
             }
         }
@@ -106,6 +126,10 @@ int main(void){
 
         else if(tela_atual == TELA_COMO_JOGAR){
             desenharComoJogar();
+        }
+
+        else if(tela_atual == TELA_DIFICULDADE){
+            desenharSelecaoDificuldade(dificuldade);
         }
 
         else if(jogo.fase == FASE_VITORIA || jogo.fase == FASE_DERROTA){
