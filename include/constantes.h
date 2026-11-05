@@ -2,7 +2,7 @@
 #define CONSTANTES_H
 
 //                     JANELA E LAYOUT 
-#define TITULO_JANELA "Ato Final"
+#define TITULO_JANELA "Ritmo de Matar"
 #define LARGURA_JANELA 1280
 #define ALTURA_JANELA 720
 #define FPS_ALVO 60
@@ -25,7 +25,7 @@
 #define JANELA_BOM 0.12f
 
 //                         NOTAS
-#define VELOCIDADE_NOTAS 400.0f
+#define VELOCIDADE_NOTAS 500.0f
 #define TEMPO_VISIBILIDADE_NOTA ((float)(LARGURA_JANELA - POSICAO_X_LINHA_ACERTO) / VELOCIDADE_NOTAS)
 
 //                        PONTUAÇÃO
@@ -43,14 +43,14 @@
 #define DISTANCIA_GANHA_POR_RECUPERACAO 1
 
 //                        INJEÇÃO
-#define ERROS_PARA_INJECAO 10
+#define ERROS_PARA_INJECAO 3
 #define NOTAS_MINIMAS_INJECAO 1
 #define NOTAS_MAXIMAS_INJECAO 2
 #define ANTECEDENCIA_INJECAO 1.5f
 #define TOLERANCIA_MESMO_TEMPO 0.001f
 
 //                        REWIND
-#define REWINDS_MAXIMOS 3
+#define REWINDS_MAXIMOS 1
 #define NOTAS_POR_REWIND 8
 #define DURACAO_ANIMACAO_REWIND 0.6f
 #define RESPIRO_APOS_REWIND 1.0f
@@ -59,7 +59,7 @@
 #define PERCENTUAL_MINIMO_VITORIA 0.75f
 
 //                     TEMPO DE APOIO
-#define SILENCIO_INICIAL 4.2f
+#define SILENCIO_INICIAL 3.0f
 #define DURACAO_FEEDBACK 0.4f
 #define ESPERA_FIM_DA_MUSICA 2.0f
 
