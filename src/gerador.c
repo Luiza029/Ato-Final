@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include "raylib.h"
 #include "gerador.h"
 #include "listas_notas.h"
@@ -10,16 +11,21 @@
  * Gerador automatico de mapas por deteccao de batidas (energia).
  *
  * 1. A musica e convertida em amostras mono (numeros de -1 a 1).
- * 2. As amostras sao cortadas em janelas de AMOSTRAS_POR_JANELA_GERADOR.
+ * 2. As amostras sao cortadas em janelas de AMOSTRAS_POR_JANELA_GERADOR que andam
+ *    de AMOSTRAS_PASSO_GERADOR em AMOSTRAS_PASSO_GERADOR (uma janela sobrepoe a outra,
+ *    entao a nota pode cair a cada ~5 ms, e nao so a cada ~21 ms).
  *    Para cada janela calculamos a energia (media dos quadrados) e a taxa de
  *    cruzamentos por zero (quantas vezes o som troca de sinal: som grave troca
  *    pouco, som agudo troca muito).
  * 3. Uma janela vira nota quando a energia dela passa da media do ultimo segundo
  *    multiplicada pela sensibilidade da dificuldade, deu um salto em relacao a
- *    janela anterior e respeita o intervalo minimo entre notas.
+ *    janela de um tamanho atras e respeita o intervalo minimo entre notas.
  * 4. Sons graves (bumbo, baixo) vao para D/F e sons agudos (caixa, prato) para J/K.
  *    Dentro de cada par as lanes se alternam para o padrao nao ficar repetitivo.
- * 5. As notas entram na lista, a lista e ordenada e salva no .txt do mapa.
+ * 5. Alinhamento na batida: o gerador descobre de quanto em quanto tempo a musica
+ *    "bate" e puxa cada nota para a batida (ou meia batida) mais proxima. Assim o
+ *    espaco entre as notas fica constante. Nota longe de qualquer batida fica onde esta.
+ * 6. As notas entram na lista, a lista e ordenada e salva no .txt do mapa.
  */
 
 typedef struct ParametrosDificuldade{
@@ -75,23 +81,25 @@ static int escolherLane(float cruzamentos, float media_cruzamentos, int alternan
     return lane;
 }
 
-/* Percorre as janelas e insere na lista as notas de uma dificuldade. */
+/* Percorre as janelas e insere na lista as notas de uma dificuldade.
+   O salto de energia e medido contra a janela de um tamanho atras (passos_por_janela),
+   que nao se sobrepoe com a atual. */
 static void detectarBatidas(const float *energias, const float *cruzamentos, int quantidade_janelas,
-                            float media_cruzamentos, float segundos_por_janela,
-                            ParametrosDificuldade parametros, Listas_notas *lista){
+                            float media_cruzamentos, float segundos_por_passo, int janelas_historico,
+                            int passos_por_janela, ParametrosDificuldade parametros, Listas_notas *lista){
     float soma_historico = 0.0f;
     float tempo_ultima_nota = -parametros.intervalo_minimo;
     int alternancia_par[2] = { 0, 0 };
     int ultima_foi_acorde = 0;
 
     for(int janela = 0; janela < quantidade_janelas; janela++){
-        if(janela >= JANELAS_HISTORICO_GERADOR){
-            float media_energia = soma_historico / JANELAS_HISTORICO_GERADOR;
+        if(janela >= janelas_historico){
+            float media_energia = soma_historico / janelas_historico;
             float energia = energias[janela];
-            float tempo = janela * segundos_por_janela;
+            float tempo = janela * segundos_por_passo;
 
             // Batida e um salto de energia: som que so cresce devagar (um fundo aumentando) nao conta
-            float aumento = energia - energias[janela - 1];
+            float aumento = energia - energias[janela - passos_por_janela];
 
             int e_batida = energia > media_energia * parametros.sensibilidade &&
                            aumento > media_energia * (parametros.sensibilidade - 1.0f) &&
@@ -116,10 +124,104 @@ static void detectarBatidas(const float *energias, const float *cruzamentos, int
             }
 
             // A janela mais antiga sai da media do ultimo segundo
-            soma_historico -= energias[janela - JANELAS_HISTORICO_GERADOR];
+            soma_historico -= energias[janela - janelas_historico];
         }
 
         soma_historico += energias[janela];
+    }
+}
+
+/* Estima de quanto em quanto tempo a musica bate (autocorrelacao).
+   Pega so os aumentos de energia (os "ataques" do som) e testa cada atraso possivel
+   entre PERIODO_MINIMO_BATIDA e PERIODO_MAXIMO_BATIDA: o atraso em que os ataques
+   mais se repetem e o periodo da batida. Retorna 0 se nao conseguir estimar. */
+static float estimarPeriodoBatida(const float *energias, int quantidade_janelas,
+                                  float segundos_por_passo, int passos_por_janela){
+    int menor_atraso = (int)(PERIODO_MINIMO_BATIDA / segundos_por_passo);
+    int maior_atraso = (int)(PERIODO_MAXIMO_BATIDA / segundos_por_passo);
+    double melhor_semelhanca = 0.0;
+    int melhor_atraso = 0;
+
+    for(int atraso = menor_atraso; atraso <= maior_atraso; atraso++){
+        double semelhanca = 0.0;
+        int comparacoes = 0;
+
+        for(int janela = passos_por_janela + atraso; janela < quantidade_janelas; janela++){
+            float ataque_agora = energias[janela] - energias[janela - passos_por_janela];
+            float ataque_antes = energias[janela - atraso] - energias[janela - atraso - passos_por_janela];
+
+            if(ataque_agora > 0.0f && ataque_antes > 0.0f){
+                semelhanca += (double)ataque_agora * ataque_antes;
+            }
+            comparacoes++;
+        }
+
+        if(comparacoes > 0){
+            semelhanca /= comparacoes;
+        }
+
+        if(semelhanca > melhor_semelhanca){
+            melhor_semelhanca = semelhanca;
+            melhor_atraso = atraso;
+        }
+    }
+
+    return melhor_atraso * segundos_por_passo;
+}
+
+/* Puxa as notas para a batida (ou meia batida) mais proxima.
+   1. Refina o periodo: testa periodos perto do estimado e fica com aquele em que as notas
+      mais "concordam" (cada nota vira um angulo no relogio da batida; se as notas estao no
+      ritmo, os angulos apontam para o mesmo lado e a soma deles fica grande).
+   2. Esse angulo medio diz onde a grade comeca (a fase).
+   3. Cada nota a ate TOLERANCIA_GRADE de um ponto da grade vai para esse ponto.
+      Se duas notas diferentes caissem no mesmo ponto, a segunda fica onde estava. */
+static void alinharNotasNaBatida(Listas_notas *lista, float periodo_estimado){
+    if(periodo_estimado <= 0.0f || lista->quantidade_de_notas < MINIMO_NOTAS_PARA_GRADE){
+        return;
+    }
+
+    double melhor_concordancia = -1.0;
+    double melhor_grade = 0.0;
+    double melhor_angulo = 0.0;
+
+    for(int tentativa = 0; tentativa <= PASSOS_BUSCA_PERIODO; tentativa++){
+        double fator = 1.0 - VARIACAO_BUSCA_PERIODO + 2.0 * VARIACAO_BUSCA_PERIODO * tentativa / PASSOS_BUSCA_PERIODO;
+        double grade = periodo_estimado * fator / DIVISOES_POR_BATIDA;
+        double soma_cosseno = 0.0;
+        double soma_seno = 0.0;
+
+        for(Nota *nota = lista->inicio; nota != NULL; nota = nota->proximo){
+            double angulo = 2.0 * PI * nota->tempo / grade;
+            soma_cosseno += cos(angulo);
+            soma_seno += sin(angulo);
+        }
+
+        double concordancia = soma_cosseno * soma_cosseno + soma_seno * soma_seno;
+        if(concordancia > melhor_concordancia){
+            melhor_concordancia = concordancia;
+            melhor_grade = grade;
+            melhor_angulo = atan2(soma_seno, soma_cosseno);
+        }
+    }
+
+    double inicio_grade = melhor_angulo / (2.0 * PI) * melhor_grade;
+    float tempo_original_anterior = -1.0f;
+    float tempo_alinhado_anterior = -1.0f;
+
+    for(Nota *nota = lista->inicio; nota != NULL; nota = nota->proximo){
+        float tempo_original = nota->tempo;
+        float tempo_na_grade = (float)(round((tempo_original - inicio_grade) / melhor_grade) * melhor_grade + inicio_grade);
+
+        // Notas de um acorde (mesmo tempo) continuam juntas; notas diferentes nao podem virar uma so
+        int colide_com_anterior = tempo_na_grade == tempo_alinhado_anterior && tempo_original != tempo_original_anterior;
+
+        if(fabsf(tempo_original - tempo_na_grade) <= TOLERANCIA_GRADE && tempo_na_grade >= 0.0f && !colide_com_anterior){
+            nota->tempo = tempo_na_grade;
+        }
+
+        tempo_original_anterior = tempo_original;
+        tempo_alinhado_anterior = nota->tempo;
     }
 }
 
@@ -138,13 +240,18 @@ int gerarMapas(const char *caminho_musica){
     // Deixa o som em mono e 32 bits para cada amostra virar um float de -1 a 1
     WaveFormat(&onda, onda.sampleRate, 32, 1);
     float *amostras = LoadWaveSamples(onda);
-    int quantidade_janelas = (int)(onda.frameCount / AMOSTRAS_POR_JANELA_GERADOR);
-    float segundos_por_janela = (float)AMOSTRAS_POR_JANELA_GERADOR / onda.sampleRate;
+    int quantidade_janelas = 0;
+    if(onda.frameCount >= AMOSTRAS_POR_JANELA_GERADOR){
+        quantidade_janelas = (int)((onda.frameCount - AMOSTRAS_POR_JANELA_GERADOR) / AMOSTRAS_PASSO_GERADOR) + 1;
+    }
+    float segundos_por_passo = (float)AMOSTRAS_PASSO_GERADOR / onda.sampleRate;
+    int janelas_historico = (int)(SEGUNDOS_HISTORICO_GERADOR / segundos_por_passo);
+    int passos_por_janela = AMOSTRAS_POR_JANELA_GERADOR / AMOSTRAS_PASSO_GERADOR;
 
     float *energias = malloc(quantidade_janelas * sizeof(float));
     float *cruzamentos = malloc(quantidade_janelas * sizeof(float));
 
-    if(amostras == NULL || energias == NULL || cruzamentos == NULL || quantidade_janelas <= JANELAS_HISTORICO_GERADOR){
+    if(amostras == NULL || energias == NULL || cruzamentos == NULL || quantidade_janelas <= janelas_historico){
         free(energias);
         free(cruzamentos);
         UnloadWaveSamples(amostras);
@@ -157,7 +264,7 @@ int gerarMapas(const char *caminho_musica){
     int janelas_com_som = 0;
 
     for(int janela = 0; janela < quantidade_janelas; janela++){
-        const float *inicio = amostras + janela * AMOSTRAS_POR_JANELA_GERADOR;
+        const float *inicio = amostras + janela * AMOSTRAS_PASSO_GERADOR;
         energias[janela] = calcularEnergia(inicio, AMOSTRAS_POR_JANELA_GERADOR);
         cruzamentos[janela] = calcularCruzamentosZero(inicio, AMOSTRAS_POR_JANELA_GERADOR);
 
@@ -168,6 +275,7 @@ int gerarMapas(const char *caminho_musica){
     }
 
     float media_cruzamentos = (janelas_com_som > 0) ? soma_cruzamentos / janelas_com_som : 0.0f;
+    float periodo_batida = estimarPeriodoBatida(energias, quantidade_janelas, segundos_por_passo, passos_por_janela);
 
     int deu_certo = 1;
 
@@ -175,8 +283,9 @@ int gerarMapas(const char *caminho_musica){
         Listas_notas lista;
         criarLista(&lista);
 
-        detectarBatidas(energias, cruzamentos, quantidade_janelas, media_cruzamentos,
-                        segundos_por_janela, PARAMETROS_DIFICULDADES[dificuldade], &lista);
+        detectarBatidas(energias, cruzamentos, quantidade_janelas, media_cruzamentos, segundos_por_passo,
+                        janelas_historico, passos_por_janela, PARAMETROS_DIFICULDADES[dificuldade], &lista);
+        alinharNotasNaBatida(&lista, periodo_batida);
         ordenarNotas(&lista);
 
         char caminho_mapa[TAMANHO_MAXIMO_CAMINHO];

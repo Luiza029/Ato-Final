@@ -100,7 +100,8 @@
 #define PASTA_MAPAS "mapas/"
 #define TAMANHO_MAXIMO_CAMINHO 512
 #define AMOSTRAS_POR_JANELA_GERADOR 1024    // ~23 ms de som em 44100 Hz
-#define JANELAS_HISTORICO_GERADOR 43        // ~1 s de historico para a media de energia
+#define AMOSTRAS_PASSO_GERADOR 256          // as janelas andam de ~5 ms em ~5 ms (uma sobrepoe a outra)
+#define SEGUNDOS_HISTORICO_GERADOR 1.0f     // historico usado na media de energia
 #define ENERGIA_MINIMA_BATIDA 0.0005f       // abaixo disso e silencio, nunca vira nota
 #define SENSIBILIDADE_FACIL 1.6f            // quantas vezes acima da media para virar nota
 #define SENSIBILIDADE_MEDIO 1.4f
@@ -109,6 +110,15 @@
 #define INTERVALO_MINIMO_MEDIO 0.28f
 #define INTERVALO_MINIMO_DIFICIL 0.16f
 #define FATOR_ACORDE_DIFICIL 3.0f           // batida muito forte no dificil vira acorde (nunca dois seguidos)
+
+// Alinhamento das notas na batida da musica
+#define PERIODO_MINIMO_BATIDA 0.30f         // segundos entre batidas: 200 bpm
+#define PERIODO_MAXIMO_BATIDA 1.00f         // 60 bpm
+#define VARIACAO_BUSCA_PERIODO 0.02f        // refina o periodo ate 2% para mais ou para menos
+#define PASSOS_BUSCA_PERIODO 400            // quantos periodos testar nesse refinamento
+#define DIVISOES_POR_BATIDA 2               // a nota pode cair na batida ou na meia batida
+#define TOLERANCIA_GRADE 0.035f             // nota a mais de 35 ms da batida fica onde esta
+#define MINIMO_NOTAS_PARA_GRADE 8           // com poucas notas nao da para achar o ritmo
 
 //                        INTERFACE
 #define MARGEM_TELA 20
