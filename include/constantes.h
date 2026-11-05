@@ -143,8 +143,14 @@
 #define TAMANHO_FONTE_TITULO 72
 #define TAMANHO_FONTE_TEXTO 28
 
-#define TAMANHO_PIP_DISTANCIA 18
-#define ESPACO_PIP_DISTANCIA 6
+//                    HUD DA PARTIDA
+#define CAMINHO_ICONE_REWIND "assets/icone_rewind.png"
+#define TAMANHO_FONTE_PONTOS 32
+#define LARGURA_BARRA_PROGRESSO 660
+#define ALTURA_BARRA_PROGRESSO 20
+#define ESCALA_ICONE_REWIND 3           // icone de 16x14 pixels desenhado 3x maior
+#define ESPACO_ICONES_REWIND 12
+#define OPACIDADE_REWIND_GASTO 0.25f
 
 #define CHAO_Y (ALTURA_CENA - 40)
 #define SOBREVIVENTE_X 500

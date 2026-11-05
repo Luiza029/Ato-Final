@@ -115,6 +115,7 @@ int main(void){
     SetTargetFPS(FPS_ALVO);
     srand((unsigned int)time(NULL));
     carregarMenu();
+    carregarInterface();
 
     // Volume geral do jogo (de 0 a 100%), guardado entre uma execucao e outra
     int volume = carregarVolume();
@@ -371,6 +372,7 @@ int main(void){
     }
 
     descarregarListaMusicas(musicas);
+    descarregarInterface();
     descarregarMenu();
     CloseAudioDevice();
     CloseWindow();

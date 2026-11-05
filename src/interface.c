@@ -5,6 +5,9 @@
 #include "constantes.h"
 #include "constantes_raylib.h"
 
+static Texture2D textura_icone_rewind;
+static bool tem_icone_rewind = false;
+
 /* ---------- Funções auxiliares (privadas deste arquivo) ---------- */
 
 /* Posição X de uma nota na tela, a partir do tempo dela e do tempo da música. */
@@ -70,9 +73,90 @@ static void desenharRespingoSangue(int lane, float tempo_restante, EstadoNota re
     }
 }
 
+/* Quanto do mapa ja passou, de 0 a 1. A lista esta ordenada, entao o fim e a ultima nota. */
+static float calcularProgressoMapa(const EstadoJogo *jogo){
+    if(jogo->lista.fim == NULL || jogo->lista.fim->tempo <= 0.0f){
+        return 0.0f;
+    }
+
+    float progresso = jogo->tempo_atual / jogo->lista.fim->tempo;
+
+    if(progresso < 0.0f){
+        return 0.0f;
+    }
+    if(progresso > 1.0f){
+        return 1.0f;
+    }
+    return progresso;
+}
+
+/* Pontuacao no canto da cena, com o multiplicador do combo ao lado. */
+static void desenharPontuacao(const EstadoJogo *jogo){
+    const char *texto_pontos = TextFormat("Pontos: %d", jogo->pontuacao);
+    DrawText(texto_pontos, MARGEM_TELA, MARGEM_TELA, TAMANHO_FONTE_PONTOS, COR_TEXTO);
+
+    int multiplicador_x = MARGEM_TELA + MeasureText(texto_pontos, TAMANHO_FONTE_PONTOS) + MARGEM_TELA / 2;
+    Color cor_multiplicador = (jogo->multiplicador > 1) ? COR_PERFEITO : Fade(COR_TEXTO, OPACIDADE_OPCAO_MENU);
+    DrawText(TextFormat("x%d", jogo->multiplicador), multiplicador_x, MARGEM_TELA, TAMANHO_FONTE_PONTOS, cor_multiplicador);
+}
+
+/* Barra de progresso do mapa: contorno do tamanho total e preenchimento do que ja passou. */
+static void desenharProgressoMapa(const EstadoJogo *jogo){
+    int barra_x = 2 * MARGEM_TELA;
+    int barra_y = POSICAO_Y_BARRA_INFO + (ALTURA_BARRA_INFO - ALTURA_BARRA_PROGRESSO) / 2;
+    int largura_preenchida = (int)(LARGURA_BARRA_PROGRESSO * calcularProgressoMapa(jogo));
+
+    DrawRectangle(barra_x, barra_y, LARGURA_BARRA_PROGRESSO, ALTURA_BARRA_PROGRESSO, COR_FUNDO_PAUTA);
+    DrawRectangle(barra_x, barra_y, largura_preenchida, ALTURA_BARRA_PROGRESSO, COR_TEXTO_DESTAQUE);
+    DrawRectangleLines(barra_x, barra_y, LARGURA_BARRA_PROGRESSO, ALTURA_BARRA_PROGRESSO, COR_LINHA_LANE);
+}
+
+/* Uma fita VHS por rewind, alinhadas a direita. As fitas ja usadas ficam apagadas. */
+static void desenharRewindsRestantes(const EstadoJogo *jogo){
+    int texto_y = POSICAO_Y_BARRA_INFO + (ALTURA_BARRA_INFO - TAMANHO_FONTE_INFO) / 2;
+
+    // Sem a imagem (arquivo faltando), mostra so o numero
+    if(!tem_icone_rewind){
+        const char *texto = TextFormat("Rewinds: %d", jogo->rewinds_restantes);
+        DrawText(texto, LARGURA_JANELA - 2 * MARGEM_TELA - MeasureText(texto, TAMANHO_FONTE_INFO), texto_y, TAMANHO_FONTE_INFO, COR_TEXTO);
+        return;
+    }
+
+    int largura_icone = textura_icone_rewind.width * ESCALA_ICONE_REWIND;
+    int altura_icone = textura_icone_rewind.height * ESCALA_ICONE_REWIND;
+    int largura_total = REWINDS_MAXIMOS * largura_icone + (REWINDS_MAXIMOS - 1) * ESPACO_ICONES_REWIND;
+    int icones_x = LARGURA_JANELA - 2 * MARGEM_TELA - largura_total;
+    int icone_y = POSICAO_Y_BARRA_INFO + (ALTURA_BARRA_INFO - altura_icone) / 2;
+
+    const char *rotulo = "Rewind (ESPACO)";
+    DrawText(rotulo, icones_x - MARGEM_TELA - MeasureText(rotulo, TAMANHO_FONTE_INFO), texto_y, TAMANHO_FONTE_INFO, Fade(COR_TEXTO, OPACIDADE_OPCAO_MENU));
+
+    for(int rewind = 0; rewind < REWINDS_MAXIMOS; rewind++){
+        Vector2 posicao = { (float)(icones_x + rewind * (largura_icone + ESPACO_ICONES_REWIND)), (float)icone_y };
+        Color tinta = (rewind < jogo->rewinds_restantes) ? WHITE : Fade(WHITE, OPACIDADE_REWIND_GASTO);
+        DrawTextureEx(textura_icone_rewind, posicao, 0.0f, (float)ESCALA_ICONE_REWIND, tinta);
+    }
+}
+
 /* ---------- Funções públicas (declaradas em interface.h) ---------- */
 
-/* Cena de cima: sobrevivente e assassino. Por enquanto, retângulos no lugar da pixelart. */
+void carregarInterface(void){
+    if(FileExists(CAMINHO_ICONE_REWIND)){
+        textura_icone_rewind = LoadTexture(CAMINHO_ICONE_REWIND);
+        // Filtro "ponto": ao ampliar, cada pixel vira um quadrado nitido (pixel art nao fica borrada)
+        SetTextureFilter(textura_icone_rewind, TEXTURE_FILTER_POINT);
+        tem_icone_rewind = true;
+    }
+}
+
+void descarregarInterface(void){
+    if(tem_icone_rewind){
+        UnloadTexture(textura_icone_rewind);
+        tem_icone_rewind = false;
+    }
+}
+
+/* Cena de cima: sobrevivente, assassino e a pontuacao no canto. Por enquanto, retângulos no lugar da pixelart. */
 void desenharCena(const EstadoJogo *jogo){
     DrawRectangle(0, 0, LARGURA_JANELA, ALTURA_CENA, COR_FUNDO_CENA);
     DrawRectangle(0, CHAO_Y, LARGURA_JANELA, ALTURA_CENA - CHAO_Y, COR_LINHA_LANE);
@@ -85,30 +169,16 @@ void desenharCena(const EstadoJogo *jogo){
     int assassino_x = ASSASSINO_X_LONGE + (int)((ASSASSINO_X_PERTO - ASSASSINO_X_LONGE) * perigo);
 
     DrawRectangle(assassino_x, CHAO_Y - ASSASSINO_ALTURA, ASSASSINO_LARGURA, ASSASSINO_ALTURA, COR_TEXTO_DESTAQUE);
+
+    desenharPontuacao(jogo);
 }
 
-/* Barra do meio: pontos, combo, rewinds e distância do assassino. */
+/* Barra do meio: progresso do mapa a esquerda e as fitas de rewind a direita. */
 void desenharBarraInfo(const EstadoJogo *jogo){
     DrawRectangle(0, POSICAO_Y_BARRA_INFO, LARGURA_JANELA, ALTURA_BARRA_INFO, COR_FUNDO_BARRA_INFO);
 
-    int texto_y = POSICAO_Y_BARRA_INFO + (ALTURA_BARRA_INFO - TAMANHO_FONTE_INFO) / 2;
-    int largura_coluna = LARGURA_JANELA / 4;
-
-    DrawText(TextFormat("Pontos: %d", jogo->pontuacao), MARGEM_TELA, texto_y, TAMANHO_FONTE_INFO, COR_TEXTO);
-    DrawText(TextFormat("Combo: %d (x%d)", jogo->combo, jogo->multiplicador), largura_coluna + MARGEM_TELA, texto_y, TAMANHO_FONTE_INFO, COR_TEXTO);
-    DrawText(TextFormat("Rewinds: %d", jogo->rewinds_restantes), 2 * largura_coluna + MARGEM_TELA, texto_y, TAMANHO_FONTE_INFO, COR_TEXTO);
-
-    /* Distância: um quadradinho por passo; os cheios mostram quanto falta para ser pego */
-    const char *rotulo = "Distancia:";
-    int pip_x = 3 * largura_coluna + MARGEM_TELA;
-    DrawText(rotulo, pip_x, texto_y, TAMANHO_FONTE_INFO, COR_TEXTO);
-    pip_x += MeasureText(rotulo, TAMANHO_FONTE_INFO) + MARGEM_TELA / 2;
-
-    int pip_y = POSICAO_Y_BARRA_INFO + (ALTURA_BARRA_INFO - TAMANHO_PIP_DISTANCIA) / 2;
-    for(int passo = 0; passo < DISTANCIA_MAXIMA_ASSASSINO; passo++){
-        Color cor_pip = (passo < jogo->distancia_assassino) ? COR_BOM : COR_LINHA_LANE;
-        DrawRectangle(pip_x + passo * (TAMANHO_PIP_DISTANCIA + ESPACO_PIP_DISTANCIA), pip_y, TAMANHO_PIP_DISTANCIA, TAMANHO_PIP_DISTANCIA, cor_pip);
-    }
+    desenharProgressoMapa(jogo);
+    desenharRewindsRestantes(jogo);
 }
 
 /* Desenha uma nota. Notas já acertadas não aparecem. */

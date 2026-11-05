@@ -3,6 +3,10 @@
 
 #include "jogo.h"
 
+/* Carrega e libera as imagens da partida (icone do rewind). Chamar depois de InitWindow. */
+void carregarInterface(void);
+void descarregarInterface(void);
+
 void desenharJogo(const EstadoJogo *jogo);
 void desenharCena(const EstadoJogo *jogo);
 void desenharBarraInfo(const EstadoJogo *jogo);
