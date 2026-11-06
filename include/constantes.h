@@ -120,6 +120,42 @@
 #define TOLERANCIA_GRADE 0.035f             // nota a mais de 35 ms da batida fica onde esta
 #define MINIMO_NOTAS_PARA_GRADE 8           // com poucas notas nao da para achar o ritmo
 
+//            DETECTOR DE MELODIA (fluxo espectral, ver melodia.c)
+#define TAXA_AMOSTRAGEM_MELODIA 11025       // a melodia vai so ate 4000 Hz: analisar com menos amostras e mais rapido
+#define TAMANHO_FFT_MELODIA 512             // potencia de 2; ~46 ms de som em 11025 Hz
+#define PASSO_FFT_MELODIA 128               // ~12 ms entre uma analise e a proxima
+#define FREQUENCIA_MINIMA_MELODIA 250.0f    // abaixo disso ficam bumbo e baixo
+#define FREQUENCIA_MAXIMA_MELODIA 4000.0f   // acima disso ficam pratos e chiado
+#define COMPRESSAO_ESPECTRO 100.0f          // log(1 + C*x): aproxima sons fortes e fracos
+#define RAIO_MEDIANA_TEMPO 4                // separacao nota/batida: 4 analises para cada lado (~45 ms)
+#define RAIO_MEDIANA_FREQUENCIA 4           // e 4 faixas para cada lado (~90 Hz)
+#define SEGUNDOS_MEDIA_FLUXO 0.10f          // vizinhanca usada na media local do fluxo
+#define SEGUNDOS_PICO_FLUXO 0.05f           // o pico precisa ser o maior nessa vizinhanca
+#define FATOR_LIMIAR_MELODIA 1.15f           // o pico precisa passar 1,15x a media local...
+#define LIMIAR_MINIMO_MELODIA 0.2f          // ...mais 0,2 da media da musica toda
+#define ANALISES_ATE_ATAQUE 1               // correcao do tempo: o ataque fica ~1 passo depois do pico
+#define ANALISES_ATE_ALTURA 2               // mede a altura da nota ~20 ms depois do ataque
+#define PESO_SEGUNDO_HARMONICO 0.5f         // soma de harmonicos para achar a nota fundamental
+#define PESO_TERCEIRO_HARMONICO 0.33f
+#define FRACAO_SUSTENTACAO 0.6f             // a nota acaba quando a faixa dela cai abaixo de 60%
+#define FREQUENCIA_LA_440 440.0f
+#define NUMERO_NOTA_LA_440 69.0f
+#define SEMITONS_POR_OITAVA 12.0f
+
+// Escolha das notas da melodia em cada dificuldade
+#define PERCENTIL_REFERENCIA_FORCA 0.9f     // forca de referencia: a nota que fica entre as 10% mais marcadas
+#define FORCA_MINIMA_FACIL 0.35f            // x forca de referencia: no facil so as notas bem marcadas
+#define FORCA_MINIMA_MEDIO 0.15f
+#define FORCA_MINIMA_DIFICIL 0.08f
+#define DENSIDADE_MINIMA_FACIL 0.5f         // notas por segundo: com menos que isso so de melodia, as batidas completam
+#define DENSIDADE_MINIMA_MEDIO 1.0f
+#define MINIMO_NOTAS_MELODIA 30             // musica com menos que isso (so percussao): usa as batidas
+#define TOLERANCIA_MESMA_ALTURA 0.5f        // semitons: nota repetida fica na mesma lane
+#define DURACAO_MINIMA_NOTA_LONGA 0.40f     // abaixo disso a nota e curta (duracao 0)
+#define DURACAO_MAXIMA_NOTA_LONGA 3.0f
+#define FOLGA_ANTES_PROXIMA_NOTA 0.10f      // a nota longa termina antes da proxima nota
+#define FRACAO_FORCA_ENGOLIDA 0.5f          // nota com menos da metade da forca de uma nota longa, dentro dela, some
+
 //                        INTERFACE
 #define MARGEM_TELA 20
 #define ESPESSURA_LINHA_ACERTO 4

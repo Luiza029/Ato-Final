@@ -6,9 +6,22 @@
 #include "listas_notas.h"
 #include "ordenacao.h"
 #include "mapa.h"
+#include "melodia.h"
 
 /*
- * Gerador automatico de mapas por deteccao de batidas (energia).
+ * Gerador automatico de mapas.
+ *
+ * As notas vem de dois detectores:
+ * - Melodia (melodia.c): o comeco das notas de voz, piano, guitarra... A lane segue a
+ *   altura da nota (grave = D, agudo = K) e a nota que continua soando vira nota longa.
+ * - Batidas (este arquivo, explicado abaixo): bumbo, caixa e outros ataques fortes.
+ *
+ * Facil e medio usam a melodia (o facil so as notas mais marcadas). O dificil usa a melodia
+ * e completa com as batidas onde nao ha nota da melodia por perto. Facil e medio tambem sao
+ * completados com as batidas quando a melodia sozinha fica com poucas notas por segundo.
+ * Se a musica quase nao tem melodia (so percussao), as tres dificuldades usam as batidas.
+ *
+ * Detector de batidas (energia):
  *
  * 1. A musica e convertida em amostras mono (numeros de -1 a 1).
  * 2. As amostras sao cortadas em janelas de AMOSTRAS_POR_JANELA_GERADOR que andam
@@ -29,17 +42,26 @@
  */
 
 typedef struct ParametrosDificuldade{
-    float sensibilidade;
-    float intervalo_minimo;
-    int permite_acordes;
+    float sensibilidade;     // batidas: quantas vezes acima da media de energia
+    float intervalo_minimo;  // segundos entre duas notas
+    int permite_acordes;     // batidas: batida muito forte vira acorde
+    float forca_minima;      // melodia: forca minima da nota (x forca de referencia da musica)
+    int junta_batidas;       // melodia + batidas sempre (dificil)
+    float densidade_minima;  // notas/s: se a melodia der menos que isso, as batidas completam
 } ParametrosDificuldade;
 
 /* Na mesma ordem do enum Dificuldade */
 static const ParametrosDificuldade PARAMETROS_DIFICULDADES[QUANTIDADE_DIFICULDADES] = {
-    { SENSIBILIDADE_FACIL,   INTERVALO_MINIMO_FACIL,   0 },
-    { SENSIBILIDADE_MEDIO,   INTERVALO_MINIMO_MEDIO,   0 },
-    { SENSIBILIDADE_DIFICIL, INTERVALO_MINIMO_DIFICIL, 1 }
+    { SENSIBILIDADE_FACIL,   INTERVALO_MINIMO_FACIL,   0, FORCA_MINIMA_FACIL,   0, DENSIDADE_MINIMA_FACIL },
+    { SENSIBILIDADE_MEDIO,   INTERVALO_MINIMO_MEDIO,   0, FORCA_MINIMA_MEDIO,   0, DENSIDADE_MINIMA_MEDIO },
+    { SENSIBILIDADE_DIFICIL, INTERVALO_MINIMO_DIFICIL, 1, FORCA_MINIMA_DIFICIL, 1, 0.0f }
 };
+
+/* Nota candidata da melodia: a forca dela e a posicao no vetor de notas. */
+typedef struct CandidataMelodia{
+    float forca;
+    int indice;
+} CandidataMelodia;
 
 static const char *SUFIXOS_DIFICULDADES[QUANTIDADE_DIFICULDADES] = {
     "facil",
@@ -225,6 +247,195 @@ static void alinharNotasNaBatida(Listas_notas *lista, float periodo_estimado){
     }
 }
 
+/* Comparadores para o qsort. */
+static int compararForcaDecrescente(const void *primeira, const void *segunda){
+    float forca_primeira = ((const CandidataMelodia *)primeira)->forca;
+    float forca_segunda = ((const CandidataMelodia *)segunda)->forca;
+    return (forca_primeira < forca_segunda) - (forca_primeira > forca_segunda);
+}
+
+static int compararFloatCrescente(const void *primeiro, const void *segundo){
+    float valor_primeiro = *(const float *)primeiro;
+    float valor_segundo = *(const float *)segundo;
+    return (valor_primeiro > valor_segundo) - (valor_primeiro < valor_segundo);
+}
+
+static int compararIntCrescente(const void *primeiro, const void *segundo){
+    return *(const int *)primeiro - *(const int *)segundo;
+}
+
+/* Escolhe as notas da melodia de uma dificuldade, das mais fortes para as mais fracas:
+   pula as fracas demais (abaixo de forca_minima x forca de referencia) e as que ficariam a
+   menos de intervalo_minimo de uma nota ja escolhida. Assim, quando duas notas estao perto,
+   fica a mais marcada. Escreve em escolhidas os indices (em ordem de tempo) e retorna quantos. */
+static int selecionarNotasMelodia(const NotaMelodia *notas, int quantidade, ParametrosDificuldade parametros, int *escolhidas){
+    CandidataMelodia *candidatas = malloc(quantidade * sizeof(CandidataMelodia));
+    float *forcas = malloc(quantidade * sizeof(float));
+
+    if(candidatas == NULL || forcas == NULL){
+        free(candidatas);
+        free(forcas);
+        return 0;
+    }
+
+    for(int i = 0; i < quantidade; i++){
+        candidatas[i].forca = notas[i].forca;
+        candidatas[i].indice = i;
+        forcas[i] = notas[i].forca;
+    }
+
+    // Forca de referencia: a nota que fica entre as 10% mais marcadas. A mediana nao serve,
+    // porque os restos de batida que escapam sao muitos e fracos e puxariam a mediana para baixo.
+    qsort(forcas, quantidade, sizeof(float), compararFloatCrescente);
+    int posicao_referencia = (int)(quantidade * PERCENTIL_REFERENCIA_FORCA);
+    if(posicao_referencia >= quantidade){
+        posicao_referencia = quantidade - 1;
+    }
+    float forca_minima = forcas[posicao_referencia] * parametros.forca_minima;
+
+    qsort(candidatas, quantidade, sizeof(CandidataMelodia), compararForcaDecrescente);
+
+    int quantidade_escolhidas = 0;
+
+    for(int c = 0; c < quantidade && candidatas[c].forca >= forca_minima; c++){
+        float tempo = notas[candidatas[c].indice].tempo;
+        int muito_perto = 0;
+
+        for(int e = 0; e < quantidade_escolhidas && !muito_perto; e++){
+            if(fabsf(notas[escolhidas[e]].tempo - tempo) < parametros.intervalo_minimo){
+                muito_perto = 1;
+            }
+        }
+
+        if(!muito_perto){
+            escolhidas[quantidade_escolhidas++] = candidatas[c].indice;
+        }
+    }
+
+    // As notas do vetor ja estao em ordem de tempo, entao ordenar os indices basta
+    qsort(escolhidas, quantidade_escolhidas, sizeof(int), compararIntCrescente);
+
+    // Nota fraca que cai dentro de uma nota longa bem mais forte e "engolida" por ela:
+    // quase sempre e acompanhamento ou resto de batida, e cortaria a nota longa no meio.
+    int quantidade_mantidas = 0;
+    float fim_nota_longa = -1.0f;
+    float forca_nota_longa = 0.0f;
+
+    for(int e = 0; e < quantidade_escolhidas; e++){
+        const NotaMelodia *nota = &notas[escolhidas[e]];
+
+        // A folga cobre o "rabo" do som: a nota seguinte pode comecar logo antes da longa sumir de vez
+        if(nota->tempo < fim_nota_longa - FOLGA_ANTES_PROXIMA_NOTA && nota->forca < forca_nota_longa * FRACAO_FORCA_ENGOLIDA){
+            continue;
+        }
+
+        escolhidas[quantidade_mantidas++] = escolhidas[e];
+
+        if(nota->sustentacao >= DURACAO_MINIMA_NOTA_LONGA){
+            fim_nota_longa = nota->tempo + nota->sustentacao;
+            forca_nota_longa = nota->forca;
+        }else{
+            fim_nota_longa = -1.0f;
+        }
+    }
+
+    free(candidatas);
+    free(forcas);
+    return quantidade_mantidas;
+}
+
+/* Insere na lista as notas escolhidas da melodia.
+   Lane pela altura: as alturas desta dificuldade sao divididas em QUANTIDADE_LANES grupos do
+   mesmo tamanho, do mais grave (D) ao mais agudo (K). Assim o mapa sobe e desce junto com a
+   melodia. Nota repetida (mesma altura da anterior) fica na mesma lane.
+   A nota que continua soando vira nota longa, sem encostar na proxima nota. */
+static void inserirNotasMelodia(const NotaMelodia *notas, const int *escolhidas, int quantidade_escolhidas, Listas_notas *lista){
+    float *alturas = malloc(quantidade_escolhidas * sizeof(float));
+
+    if(alturas == NULL){
+        return;
+    }
+
+    for(int e = 0; e < quantidade_escolhidas; e++){
+        alturas[e] = notas[escolhidas[e]].altura;
+    }
+
+    qsort(alturas, quantidade_escolhidas, sizeof(float), compararFloatCrescente);
+
+    float limites[QUANTIDADE_LANES - 1];
+    for(int lane = 1; lane < QUANTIDADE_LANES; lane++){
+        limites[lane - 1] = alturas[quantidade_escolhidas * lane / QUANTIDADE_LANES];
+    }
+
+    int lane_anterior = -1;
+    float altura_anterior = 0.0f;
+
+    for(int e = 0; e < quantidade_escolhidas; e++){
+        const NotaMelodia *nota = &notas[escolhidas[e]];
+
+        int lane = 0;
+        while(lane < QUANTIDADE_LANES - 1 && nota->altura >= limites[lane]){
+            lane++;
+        }
+
+        if(lane_anterior >= 0 && fabsf(nota->altura - altura_anterior) <= TOLERANCIA_MESMA_ALTURA){
+            lane = lane_anterior;
+        }
+
+        float duracao = nota->sustentacao;
+        if(duracao > DURACAO_MAXIMA_NOTA_LONGA){
+            duracao = DURACAO_MAXIMA_NOTA_LONGA;
+        }
+        if(e + 1 < quantidade_escolhidas){
+            float ate_proxima = notas[escolhidas[e + 1]].tempo - nota->tempo - FOLGA_ANTES_PROXIMA_NOTA;
+            if(duracao > ate_proxima){
+                duracao = ate_proxima;
+            }
+        }
+        if(duracao < DURACAO_MINIMA_NOTA_LONGA){
+            duracao = 0.0f;
+        }
+
+        inserirNota(lista, nota->tempo, lane, 0);
+        lista->fim->duracao = duracao;
+
+        lane_anterior = lane;
+        altura_anterior = nota->altura;
+    }
+
+    free(alturas);
+}
+
+/* As batidas (bumbo, caixa...) entram junto com as notas da melodia que ja estao na lista,
+   mas so onde nao atrapalham: longe (intervalo_minimo) do comeco de qualquer nota da melodia
+   e fora das notas longas, que deixam a mao ocupada ate o fim. */
+static void juntarBatidas(const Listas_notas *batidas, float intervalo_minimo, Listas_notas *lista){
+    // As batidas sao inseridas no fim da lista: so as notas ate aqui sao da melodia
+    const Nota *ultima_da_melodia = lista->fim;
+
+    for(const Nota *batida = batidas->inicio; batida != NULL; batida = batida->proximo){
+        int atrapalha = 0;
+
+        for(const Nota *nota = lista->inicio; nota != NULL; nota = nota->proximo){
+            int perto_do_comeco = fabsf(nota->tempo - batida->tempo) < intervalo_minimo;
+            int dentro_da_longa = nota->duracao > 0.0f && batida->tempo > nota->tempo &&
+                                  batida->tempo < nota->tempo + nota->duracao + FOLGA_ANTES_PROXIMA_NOTA;
+
+            if(perto_do_comeco || dentro_da_longa){
+                atrapalha = 1;
+            }
+
+            if(atrapalha || nota == ultima_da_melodia){
+                break;
+            }
+        }
+
+        if(!atrapalha){
+            inserirNota(lista, batida->tempo, batida->lane, 0);
+        }
+    }
+}
+
 void montarCaminhoMapa(char *destino, int tamanho_destino, const char *caminho_musica, Dificuldade dificuldade){
     snprintf(destino, tamanho_destino, "%s%s_%s.txt",
              PASTA_MAPAS, GetFileNameWithoutExt(caminho_musica), SUFIXOS_DIFICULDADES[dificuldade]);
@@ -277,14 +488,62 @@ int gerarMapas(const char *caminho_musica){
     float media_cruzamentos = (janelas_com_som > 0) ? soma_cruzamentos / janelas_com_som : 0.0f;
     float periodo_batida = estimarPeriodoBatida(energias, quantidade_janelas, segundos_por_passo, passos_por_janela);
 
+    // Notas da melodia. Se a musica quase nao tem melodia (so percussao), fica so com as batidas.
+    // A melodia vai so ate FREQUENCIA_MAXIMA_MELODIA, entao ela e analisada numa copia do som com
+    // taxa menor (WaveFormat ja filtra os agudos ao reduzir a taxa): 4x menos amostras e FFT 4x menor.
+    NotaMelodia *notas_melodia = NULL;
+    int quantidade_melodia = -1;
+    Wave onda_melodia = WaveCopy(onda);
+    WaveFormat(&onda_melodia, TAXA_AMOSTRAGEM_MELODIA, 32, 1);
+    float *amostras_melodia = LoadWaveSamples(onda_melodia);
+
+    if(amostras_melodia != NULL){
+        quantidade_melodia = detectarNotasMelodia(amostras_melodia, (int)onda_melodia.frameCount, TAXA_AMOSTRAGEM_MELODIA, &notas_melodia);
+    }
+
+    UnloadWaveSamples(amostras_melodia);
+    UnloadWave(onda_melodia);
+    int *escolhidas = (quantidade_melodia > 0) ? malloc(quantidade_melodia * sizeof(int)) : NULL;
+    int usa_melodia = quantidade_melodia >= MINIMO_NOTAS_MELODIA && escolhidas != NULL;
+    float duracao_musica = (float)onda.frameCount / onda.sampleRate;
+
     int deu_certo = 1;
 
     for(int dificuldade = 0; dificuldade < QUANTIDADE_DIFICULDADES; dificuldade++){
         Listas_notas lista;
         criarLista(&lista);
 
-        detectarBatidas(energias, cruzamentos, quantidade_janelas, media_cruzamentos, segundos_por_passo,
-                        janelas_historico, passos_por_janela, PARAMETROS_DIFICULDADES[dificuldade], &lista);
+        ParametrosDificuldade parametros = PARAMETROS_DIFICULDADES[dificuldade];
+        int quantidade_escolhidas = 0;
+
+        if(usa_melodia){
+            quantidade_escolhidas = selecionarNotasMelodia(notas_melodia, quantidade_melodia, parametros, escolhidas);
+        }
+
+        if(quantidade_escolhidas > 0){
+            inserirNotasMelodia(notas_melodia, escolhidas, quantidade_escolhidas, &lista);
+
+            // Melodia com poucas notas (ex.: notas repetidas na mesma altura, que quase nao
+            // mudam o espectro): as batidas completam o mapa
+            float densidade_melodia = quantidade_escolhidas / duracao_musica;
+
+            if(parametros.junta_batidas || densidade_melodia < parametros.densidade_minima){
+                Listas_notas batidas;
+                criarLista(&batidas);
+                detectarBatidas(energias, cruzamentos, quantidade_janelas, media_cruzamentos, segundos_por_passo,
+                                janelas_historico, passos_por_janela, parametros, &batidas);
+                juntarBatidas(&batidas, parametros.intervalo_minimo, &lista);
+                liberarLista(&batidas);
+            }
+        }else{
+            detectarBatidas(energias, cruzamentos, quantidade_janelas, media_cruzamentos, segundos_por_passo,
+                            janelas_historico, passos_por_janela, parametros, &lista);
+        }
+
+        // As batidas do dificil entraram depois da melodia: ordena antes de alinhar (o alinhamento
+        // compara cada nota com a anterior) e de novo depois, porque alinhar pode trocar duas de lugar.
+        // Com a lista quase ordenada, o Insertion Sort faz isso em quase uma passada so.
+        ordenarNotas(&lista);
         alinharNotasNaBatida(&lista, periodo_batida);
         ordenarNotas(&lista);
 
@@ -298,6 +557,8 @@ int gerarMapas(const char *caminho_musica){
         liberarLista(&lista);
     }
 
+    free(notas_melodia);
+    free(escolhidas);
     free(energias);
     free(cruzamentos);
     UnloadWaveSamples(amostras);

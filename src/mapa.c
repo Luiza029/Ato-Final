@@ -3,6 +3,8 @@
 #include "ordenacao.h"
 #include "constantes.h"
 
+/* Le o arquivo do mapa (uma nota por linha: tempo lane, e a duracao opcional)
+   e insere as notas na lista, ja ordenada. Retorna 0 se o arquivo nao abriu. */
 int carregarMapa(Listas_notas *lista, const char *caminho_mapa){
     FILE *arq = fopen(caminho_mapa, "r");
 
@@ -13,9 +15,12 @@ int carregarMapa(Listas_notas *lista, const char *caminho_mapa){
     char linha[100];
     int lane;
     float tempo;
+    float duracao;
 
     while (fgets(linha, sizeof(linha), arq) != NULL){
-        if(sscanf(linha, "%f %d", &tempo, &lane) != 2){
+        // A 3a coluna (duracao da nota longa) e opcional: mapas antigos tem so 2
+        int lidos = sscanf(linha, "%f %d %f", &tempo, &lane, &duracao);
+        if(lidos < 2){
             continue;
         }
 
@@ -24,6 +29,10 @@ int carregarMapa(Listas_notas *lista, const char *caminho_mapa){
         } 
         
         inserirNota(lista, tempo, lane, 0);
+
+        if(lidos == 3 && duracao > 0.0f){
+            lista->fim->duracao = duracao;
+        }
     }
 
     fclose(arq);
@@ -32,7 +41,8 @@ int carregarMapa(Listas_notas *lista, const char *caminho_mapa){
 }
 
 
-/* Grava as notas do mapa (nao injetadas) no arquivo, uma por linha: tempo lane.
+/* Grava as notas do mapa (nao injetadas) no arquivo, uma por linha: tempo lane
+   (e a duracao, so nas notas longas).
    Retorna 1 se deu certo e 0 se nao conseguiu criar o arquivo. */
 int salvarMapa(const Listas_notas *lista, const char *caminho_mapa){
     FILE *arq = fopen(caminho_mapa, "w");
@@ -46,7 +56,11 @@ int salvarMapa(const Listas_notas *lista, const char *caminho_mapa){
             continue;
         }
 
-        fprintf(arq, "%.3f %d\n", nota->tempo, nota->lane);
+        if(nota->duracao > 0.0f){
+            fprintf(arq, "%.3f %d %.3f\n", nota->tempo, nota->lane, nota->duracao);
+        }else{
+            fprintf(arq, "%.3f %d\n", nota->tempo, nota->lane);
+        }
     }
 
     fclose(arq);

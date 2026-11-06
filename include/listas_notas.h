@@ -8,6 +8,7 @@ typedef struct Nota{
     int lane;
     EstadoNota estado;
     int injetada;
+    float duracao;      // segundos que a nota deve ser segurada (0 = nota curta)
     struct Nota *anterior;
     struct Nota *proximo;
 

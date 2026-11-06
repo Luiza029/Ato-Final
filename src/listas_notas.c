@@ -26,6 +26,7 @@ void inserirNota(Listas_notas *lista, float tempo, int lane, int injetada){
     nova->lane = lane;
     nova->estado = PENDENTE;
     nova->injetada = injetada;
+    nova->duracao = 0.0f;
     nova->anterior = NULL;
     nova->proximo = NULL;
 
