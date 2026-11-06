@@ -48,13 +48,14 @@ typedef struct ParametrosDificuldade{
     float forca_minima;      // melodia: forca minima da nota (x forca de referencia da musica)
     int junta_batidas;       // melodia + batidas sempre (dificil)
     float densidade_minima;  // notas/s: se a melodia der menos que isso, as batidas completam
+    int permite_notas_longas; // o facil fica so com notas curtas
 } ParametrosDificuldade;
 
 /* Na mesma ordem do enum Dificuldade */
 static const ParametrosDificuldade PARAMETROS_DIFICULDADES[QUANTIDADE_DIFICULDADES] = {
-    { SENSIBILIDADE_FACIL,   INTERVALO_MINIMO_FACIL,   0, FORCA_MINIMA_FACIL,   0, DENSIDADE_MINIMA_FACIL },
-    { SENSIBILIDADE_MEDIO,   INTERVALO_MINIMO_MEDIO,   0, FORCA_MINIMA_MEDIO,   0, DENSIDADE_MINIMA_MEDIO },
-    { SENSIBILIDADE_DIFICIL, INTERVALO_MINIMO_DIFICIL, 1, FORCA_MINIMA_DIFICIL, 1, 0.0f }
+    { SENSIBILIDADE_FACIL,   INTERVALO_MINIMO_FACIL,   0, FORCA_MINIMA_FACIL,   0, DENSIDADE_MINIMA_FACIL, 0 },
+    { SENSIBILIDADE_MEDIO,   INTERVALO_MINIMO_MEDIO,   0, FORCA_MINIMA_MEDIO,   0, DENSIDADE_MINIMA_MEDIO, 1 },
+    { SENSIBILIDADE_DIFICIL, INTERVALO_MINIMO_DIFICIL, 1, FORCA_MINIMA_DIFICIL, 1, 0.0f,                   1 }
 };
 
 /* Nota candidata da melodia: a forca dela e a posicao no vetor de notas. */
@@ -349,7 +350,8 @@ static int selecionarNotasMelodia(const NotaMelodia *notas, int quantidade, Para
    mesmo tamanho, do mais grave (D) ao mais agudo (K). Assim o mapa sobe e desce junto com a
    melodia. Nota repetida (mesma altura da anterior) fica na mesma lane.
    A nota que continua soando vira nota longa, sem encostar na proxima nota. */
-static void inserirNotasMelodia(const NotaMelodia *notas, const int *escolhidas, int quantidade_escolhidas, Listas_notas *lista){
+static void inserirNotasMelodia(const NotaMelodia *notas, const int *escolhidas, int quantidade_escolhidas,
+                                int permite_notas_longas, Listas_notas *lista){
     float *alturas = malloc(quantidade_escolhidas * sizeof(float));
 
     if(alturas == NULL){
@@ -382,7 +384,7 @@ static void inserirNotasMelodia(const NotaMelodia *notas, const int *escolhidas,
             lane = lane_anterior;
         }
 
-        float duracao = nota->sustentacao;
+        float duracao = permite_notas_longas ? nota->sustentacao : 0.0f;
         if(duracao > DURACAO_MAXIMA_NOTA_LONGA){
             duracao = DURACAO_MAXIMA_NOTA_LONGA;
         }
@@ -521,7 +523,7 @@ int gerarMapas(const char *caminho_musica){
         }
 
         if(quantidade_escolhidas > 0){
-            inserirNotasMelodia(notas_melodia, escolhidas, quantidade_escolhidas, &lista);
+            inserirNotasMelodia(notas_melodia, escolhidas, quantidade_escolhidas, parametros.permite_notas_longas, &lista);
 
             // Melodia com poucas notas (ex.: notas repetidas na mesma altura, que quase nao
             // mudam o espectro): as batidas completam o mapa

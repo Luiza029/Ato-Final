@@ -1,7 +1,8 @@
 #ifndef LISTAS_NOTAS_H
 #define LISTAS_NOTAS_H
 
-typedef enum EstadoNota{PENDENTE, PERFEITO, BOM, ERRADO} EstadoNota;
+/* SEGURANDO: a cabeca de uma nota longa foi acertada e a tecla ainda esta apertada. */
+typedef enum EstadoNota{PENDENTE, PERFEITO, BOM, ERRADO, SEGURANDO} EstadoNota;
 
 typedef struct Nota{
     float tempo;

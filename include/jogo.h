@@ -32,11 +32,18 @@ typedef struct EstadoJogo{
     float tempo_efeito_lane[QUANTIDADE_LANES];     // contagem regressiva do respingo (0 = sem efeito)
     EstadoNota resultado_efeito_lane[QUANTIDADE_LANES];  // PERFEITO faz um respingo maior que BOM
     unsigned int semente_efeito_lane[QUANTIDADE_LANES];  // muda o desenho de cada respingo    
+
+    /* Notas longas: a que esta sendo segurada em cada lane (NULL = nenhuma) e como foi o acerto
+       da cabeca dela. A nota so vira PERFEITO ou BOM quando o jogador segura ate o fim. */
+    Nota *nota_segurada[QUANTIDADE_LANES];
+    EstadoNota resultado_cabeca[QUANTIDADE_LANES];
 } EstadoJogo;
 
 int iniciarJogo(EstadoJogo *jogo, const char *caminho_mapa);
 void atualizarJogo(EstadoJogo *jogo, float delta_tempo);
 void tratarTeclaLane(EstadoJogo *jogo, int lane);
+/* Avisa que a tecla da lane foi solta: se havia nota longa segurada antes do fim, e erro. */
+void soltarTeclaLane(EstadoJogo *jogo, int lane);
 void usarRewind(EstadoJogo *jogo);
 void injetarNotas(EstadoJogo *jogo);
 void verificarFimDeJogo(EstadoJogo *jogo);

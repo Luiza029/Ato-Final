@@ -294,6 +294,11 @@ int main(void){
                     if(IsKeyPressed(TECLAS_LANES[i])){
                         tratarTeclaLane(&jogo, i);
                     }
+
+                    // Soltar a tecla importa nas notas longas (soltar antes do fim e erro)
+                    if(IsKeyReleased(TECLAS_LANES[i])){
+                        soltarTeclaLane(&jogo, i);
+                    }
                 }
 
                 if(IsKeyPressed(TECLA_REWIND)){

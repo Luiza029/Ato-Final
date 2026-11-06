@@ -135,5 +135,26 @@ int main(void){
 
     liberarLista(&lista_injecao);
 
+    /* Notas longas: a duracao viaja junto com a nota na ordenacao e o rewind volta a nota
+       que estava sendo segurada para PENDENTE */
+    Listas_notas lista_longas;
+    criarLista(&lista_longas);
+    inserirNota(&lista_longas, 2.0f, 1, 0);
+    inserirNota(&lista_longas, 1.0f, 0, 0);
+    lista_longas.fim->duracao = 0.8f;
+    conferir("nota nova comeca curta (duracao 0)", lista_longas.inicio->duracao == 0.0f);
+
+    ordenarNotas(&lista_longas);
+    conferir("depois de ordenar, a nota longa (1.0) continua com duracao 0.8", lista_longas.inicio->tempo == 1.0f && lista_longas.inicio->duracao == 0.8f);
+
+    atualizarEstadoNota(processarProximaNota(&lista_longas), SEGURANDO);
+    conferir("contar notas SEGURANDO", contarNotasPorEstado(&lista_longas, SEGURANDO) == 1);
+    conferir("nota SEGURANDO ainda nao conta como acerto", calcularPercentualAcertos(&lista_longas) == 0.0f);
+
+    voltarCursor(&lista_longas, 1);
+    conferir("rewind volta a nota segurada para PENDENTE", lista_longas.inicio->estado == PENDENTE && lista_longas.cursor == lista_longas.inicio);
+
+    liberarLista(&lista_longas);
+
     return falhas == 0 ? 0 : 1;
 }

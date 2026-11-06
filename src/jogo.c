@@ -36,6 +36,8 @@ int iniciarJogo(EstadoJogo *jogo, const char *caminho_mapa) {
     jogo->tempo_efeito_lane[lane] = 0;
     jogo->resultado_efeito_lane[lane] = PENDENTE;
     jogo->semente_efeito_lane[lane] = 0;
+    jogo->nota_segurada[lane] = NULL;
+    jogo->resultado_cabeca[lane] = PENDENTE;
   }
 
   return 1;
@@ -115,7 +117,17 @@ void tratarTeclaLane(EstadoJogo *jogo, int lane) {
     resultado = BOM;
   }
 
-  atualizarEstadoNota(nota, resultado);
+  // Nota longa: a cabeca vale como uma nota normal, mas a nota so fica PERFEITO/BOM
+  // se o jogador segurar ate o fim (ver soltarTeclaLane e atualizarNotasSeguradas)
+  if (nota->duracao > 0.0f) {
+    atualizarEstadoNota(nota, SEGURANDO);
+    jogo->nota_segurada[lane] = nota;
+    jogo->resultado_cabeca[lane] = resultado;
+  }
+
+  else {
+    atualizarEstadoNota(nota, resultado);
+  }
 
   registrarAcerto(jogo, resultado);
 
@@ -123,6 +135,45 @@ void tratarTeclaLane(EstadoJogo *jogo, int lane) {
   jogo->tempo_efeito_lane[lane] = DURACAO_EFEITO_SANGUE;
   jogo->resultado_efeito_lane[lane] = resultado;
   jogo->semente_efeito_lane[lane] = (unsigned int)rand();
+}
+
+/* Nota longa segurada ate o fim: ganha o resultado da cabeca e o bonus pelo tempo segurado. */
+static void completarNotaLonga(EstadoJogo *jogo, int lane) {
+  Nota *nota = jogo->nota_segurada[lane];
+
+  atualizarEstadoNota(nota, jogo->resultado_cabeca[lane]);
+  jogo->pontuacao += (int)(nota->duracao * PONTOS_POR_SEGUNDO_SEGURADO) * jogo->multiplicador;
+  jogo->nota_segurada[lane] = NULL;
+}
+
+void soltarTeclaLane(EstadoJogo *jogo, int lane) {
+  Nota *nota = jogo->nota_segurada[lane];
+
+  if (jogo->fase != FASE_JOGANDO || nota == NULL) {
+    return;
+  }
+
+  // Soltou no fim (ou bem perto dele): segurou a nota inteira
+  if (jogo->tempo_atual >= nota->tempo + nota->duracao - TOLERANCIA_FIM_NOTA_LONGA) {
+    completarNotaLonga(jogo, lane);
+    return;
+  }
+
+  // Soltou cedo: a nota inteira conta como erro
+  atualizarEstadoNota(nota, ERRADO);
+  jogo->nota_segurada[lane] = NULL;
+  registrarErro(jogo);
+}
+
+/* A cada frame: a nota longa que chegou ao fim com a tecla ainda apertada esta completa. */
+static void atualizarNotasSeguradas(EstadoJogo *jogo) {
+  for (int lane = 0; lane < QUANTIDADE_LANES; lane++) {
+    Nota *nota = jogo->nota_segurada[lane];
+
+    if (nota != NULL && jogo->tempo_atual >= nota->tempo + nota->duracao) {
+      completarNotaLonga(jogo, lane);
+    }
+  }
 }
 
 void verificarFimDeJogo(EstadoJogo *jogo) {
@@ -137,6 +188,13 @@ void verificarFimDeJogo(EstadoJogo *jogo) {
 
   if (jogo->lista.cursor != NULL) {
     return;
+  }
+
+  // Ainda tem nota longa sendo segurada: espera ela terminar
+  for (int lane = 0; lane < QUANTIDADE_LANES; lane++) {
+    if (jogo->nota_segurada[lane] != NULL) {
+      return;
+    }
   }
 
   float tempo_ultima_nota = 0.0f;
@@ -256,12 +314,23 @@ static void descontarPontosDoRewind(EstadoJogo *jogo) {
       break;
     }
 
-    if (nota->estado == PERFEITO) {
+    // Nota longa no meio do segurar: so a cabeca tinha dado pontos
+    EstadoNota resultado = nota->estado;
+    if (resultado == SEGURANDO) {
+      resultado = jogo->resultado_cabeca[nota->lane];
+    }
+
+    if (resultado == PERFEITO) {
       jogo->pontuacao -= PONTOS_PERFEITO;
     }
 
-    else if (nota->estado == BOM) {
+    else if (resultado == BOM) {
       jogo->pontuacao -= PONTOS_BOM;
+    }
+
+    // Nota longa completa: tambem tira o bonus (no valor base, como a cabeca)
+    if (nota->estado != SEGURANDO && (resultado == PERFEITO || resultado == BOM)) {
+      jogo->pontuacao -= (int)(nota->duracao * PONTOS_POR_SEGUNDO_SEGURADO);
     }
   }
 }
@@ -279,6 +348,15 @@ void usarRewind(EstadoJogo *jogo) {
   // Nada para voltar (lista vazia ou cursor ja no inicio): nao gasta o rewind.
   if (jogo->lista.cursor == cursor_antes) {
     return;
+  }
+
+  // O rewind solta as notas longas que estavam sendo seguradas. Normalmente elas
+  // estao entre as notas que voltaram a PENDENTE; se nao estiverem, contam como erro.
+  for (int lane = 0; lane < QUANTIDADE_LANES; lane++) {
+    if (jogo->nota_segurada[lane] != NULL && jogo->nota_segurada[lane]->estado == SEGURANDO) {
+      atualizarEstadoNota(jogo->nota_segurada[lane], ERRADO);
+    }
+    jogo->nota_segurada[lane] = NULL;
   }
 
   jogo->rewinds_restantes--;
@@ -337,6 +415,8 @@ void atualizarJogo(EstadoJogo *jogo, float delta_tempo) {
   if (!(jogo->fase == FASE_JOGANDO)) {
     return;
   }
+
+  atualizarNotasSeguradas(jogo);
 
   Nota *nota = jogo->lista.cursor;
 

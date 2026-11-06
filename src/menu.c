@@ -26,6 +26,7 @@ static const char *DESCRICOES_DIFICULDADES[QUANTIDADE_DIFICULDADES] = {
 
 static const char *LINHAS_COMO_JOGAR[] = {
     "Aperte D, F, J e K quando a nota chegar na linha.",
+    "Nota com rastro: segure a tecla ate o fim do rastro.",
     "Acertos afastam o assassino. Erros o aproximam.",
     "Errou demais? O assassino joga notas extras na pauta.",
     "ESPACO: rewind, volta algumas notas (usos limitados).",

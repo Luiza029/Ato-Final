@@ -181,7 +181,9 @@ void desenharBarraInfo(const EstadoJogo *jogo){
     desenharRewindsRestantes(jogo);
 }
 
-/* Desenha uma nota. Notas já acertadas não aparecem. */
+/* Desenha uma nota. Notas já acertadas não aparecem.
+   Nota longa: um rastro da cabeça até o fim. Enquanto é segurada, a cabeça fica parada
+   na linha de acerto e o rastro vai sendo consumido. */
 void desenharNota(const Nota *nota, float tempo_atual){
     if(nota->estado == PERFEITO || nota->estado == BOM){
         return;
@@ -191,12 +193,23 @@ void desenharNota(const Nota *nota, float tempo_atual){
     int nota_y = calcularCentroYLane(nota->lane);
     int raio = TAMANHO_NOTA / 2;
 
+    if(nota->estado == SEGURANDO){
+        nota_x = POSICAO_X_LINHA_ACERTO;
+    }
+
     Color cor_miolo = nota->injetada ? COR_NOTA_INJETADA : CORES_LANES[nota->lane];
     Color cor_borda = nota->injetada ? COR_BORDA_INJETADA : cor_miolo;
 
     if(nota->estado == ERRADO){
         cor_miolo = Fade(cor_miolo, OPACIDADE_NOTA_ERRADA);
         cor_borda = Fade(cor_borda, OPACIDADE_NOTA_ERRADA);
+    }
+
+    if(nota->duracao > 0.0f){
+        int fim_x = (int)calcularPosicaoX(nota->tempo + nota->duracao, tempo_atual);
+        if(fim_x > nota_x){
+            DrawRectangle(nota_x, nota_y - ALTURA_RASTRO_NOTA / 2, fim_x - nota_x, ALTURA_RASTRO_NOTA, Fade(cor_miolo, OPACIDADE_RASTRO_NOTA));
+        }
     }
 
     DrawCircle(nota_x, nota_y, raio, cor_borda);
@@ -215,6 +228,13 @@ void desenharPauta(const EstadoJogo *jogo){
     }
 
     DrawRectangle(POSICAO_X_LINHA_ACERTO - ESPESSURA_LINHA_ACERTO / 2, POSICAO_Y_PAUTA,ESPESSURA_LINHA_ACERTO, ALTURA_PAUTA, COR_LINHA_ACERTO);
+
+    /* Notas longas sendo seguradas: o cursor já passou delas, então são desenhadas à parte */
+    for(int lane = 0; lane < QUANTIDADE_LANES; lane++){
+        if(jogo->nota_segurada[lane] != NULL){
+            desenharNota(jogo->nota_segurada[lane], jogo->tempo_atual);
+        }
+    }
 
     /* A lista está ordenada por tempo: ao achar uma nota fora da tela pela direita,
        todas as seguintes também estão, então podemos parar. */

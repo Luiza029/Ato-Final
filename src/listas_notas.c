@@ -165,6 +165,7 @@ static const char *nomeEstado(EstadoNota estado){
         case PERFEITO: return "PERFEITO";
         case BOM:      return "BOM";
         case ERRADO:   return "ERRADO";
+        case SEGURANDO: return "SEGURANDO";
     }
     return "DESCONHECIDO";
 }

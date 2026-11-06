@@ -33,6 +33,10 @@
 #define PONTOS_BOM 100
 #define COMBO_POR_MULTIPLICADOR 10
 #define MULTIPLICADOR_MAXIMO 4
+#define PONTOS_POR_SEGUNDO_SEGURADO 200     // bonus da nota longa, por segundo segurado (x multiplicador)
+
+//                      NOTAS LONGAS
+#define TOLERANCIA_FIM_NOTA_LONGA 0.15f     // soltar ate 0,15 s antes do fim ainda conta como segurou ate o fim
 
 //                        ASSASSINO
 #define DISTANCIA_MINIMA_ASSASSINO 0
@@ -161,6 +165,8 @@
 #define ESPESSURA_LINHA_ACERTO 4
 #define ESPESSURA_BORDA_NOTA 5
 #define OPACIDADE_NOTA_ERRADA 0.3f
+#define ALTURA_RASTRO_NOTA (TAMANHO_NOTA / 2)
+#define OPACIDADE_RASTRO_NOTA 0.55f
 
 //                  RESPINGO DE SANGUE (acerto)
 #define DURACAO_EFEITO_SANGUE 0.45f     
