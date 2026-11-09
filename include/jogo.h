@@ -20,6 +20,7 @@ typedef struct EstadoJogo{
     int combo;
     int multiplicador;
     int distancia_assassino;     
+    float distancia_exibida;     // distancia que aparece na tela: anda aos poucos ate distancia_assassino
     int erros_acumulados;        
     int acertos_seguidos;       
     int rewinds_restantes;

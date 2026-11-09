@@ -21,6 +21,7 @@ int iniciarJogo(EstadoJogo *jogo, const char *caminho_mapa) {
 
   jogo->multiplicador = 1;
   jogo->distancia_assassino = DISTANCIA_INICIAL_ASSASSINO;
+  jogo->distancia_exibida = DISTANCIA_INICIAL_ASSASSINO;
   jogo->rewinds_restantes = REWINDS_MAXIMOS;
   jogo->tempo_atual = -SILENCIO_INICIAL;
 
@@ -383,6 +384,12 @@ void atualizarJogo(EstadoJogo *jogo, float delta_tempo) {
       jogo->tempo_efeito_lane[lane] -= delta_tempo;
     }
   }
+
+  // O assassino da tela anda ate a distancia real em vez de pular: a cada frame percorre uma
+  // fracao do que falta (rapido quando esta longe, devagar quando esta chegando).
+  // 1 - e^(-k*dt) deixa a velocidade igual com qualquer FPS.
+  float fracao = 1.0f - expf(-SUAVIZACAO_ASSASSINO * delta_tempo);
+  jogo->distancia_exibida += (jogo->distancia_assassino - jogo->distancia_exibida) * fracao;
 
   if (jogo->fase == FASE_SILENCIO_INICIAL) {
     jogo->tempo_atual += delta_tempo;

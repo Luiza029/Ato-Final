@@ -42,6 +42,7 @@
 #define DISTANCIA_MINIMA_ASSASSINO 0
 #define DISTANCIA_MAXIMA_ASSASSINO 4
 #define DISTANCIA_INICIAL_ASSASSINO (DISTANCIA_MAXIMA_ASSASSINO)
+#define SUAVIZACAO_ASSASSINO 6.0f            // quanto maior, mais rapido o assassino chega na posicao nova (~0,5 s)
 #define DISTANCIA_PERDIDA_POR_ERRO 1
 #define ACERTOS_PARA_RECUPERAR 3
 #define DISTANCIA_GANHA_POR_RECUPERACAO 1
@@ -187,6 +188,10 @@
 
 //                    HUD DA PARTIDA
 #define CAMINHO_ICONE_REWIND "assets/icone_rewind.png"
+#define CAMINHO_SPRITE_ASSASSINO "assets/sprites/Sprite_killer.png"
+#define QUADROS_SPRITE_ASSASSINO 6         // a imagem tem 6 poses de corrida lado a lado
+#define QUADROS_POR_SEGUNDO_ASSASSINO 10.0f
+#define TRANSPARENCIA_MINIMA_SPRITE 0.1f    // pixel com menos opacidade que isso conta como fundo vazio
 #define TAMANHO_FONTE_PONTOS 32
 #define LARGURA_BARRA_PROGRESSO 660
 #define ALTURA_BARRA_PROGRESSO 20
@@ -201,7 +206,7 @@
 #define ASSASSINO_LARGURA 80
 #define ASSASSINO_ALTURA 160
 #define ASSASSINO_X_LONGE (MARGEM_TELA)
-#define ASSASSINO_X_PERTO (SOBREVIVENTE_X - ASSASSINO_LARGURA)
+// O ponto "perto" do assassino e calculado na interface: SOBREVIVENTE_X - largura do sprite
 
 #define ESPACO_LINHAS_REWIND 6
 #define VELOCIDADE_LINHAS_REWIND 400.0f
