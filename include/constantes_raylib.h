@@ -17,6 +17,8 @@
 #define TECLA_VOLTAR      KEY_BACKSPACE
 #define TECLA_MENU_CIMA   KEY_UP
 #define TECLA_MENU_BAIXO  KEY_DOWN
+#define TECLA_MENU_ESQUERDA KEY_LEFT
+#define TECLA_MENU_DIREITA  KEY_RIGHT
 
 /* ---------- CORES ---------- */
 // Formato: (Color){ vermelho, verde, azul, transparência }, cada valor de 0 a 255
@@ -28,6 +30,7 @@
 #define COR_LINHA_ACERTO      (Color){ 230, 230, 230, 255 }
 #define COR_TEXTO             (Color){ 235, 235, 235, 255 }
 #define COR_TEXTO_DESTAQUE    (Color){ 200, 30, 30, 255 }   // vermelho sangue
+#define COR_FUNDO_MENU        (Color){ 30, 31, 44, 255 }   // igual ao fundo da arte do menu
 
 // Notas normais: uma cor por lane
 static const Color CORES_LANES[QUANTIDADE_LANES] = {
@@ -40,6 +43,10 @@ static const Color CORES_LANES[QUANTIDADE_LANES] = {
 // Notas injetadas pelo assassino (campo "injetada" da struct Nota)
 #define COR_NOTA_INJETADA     (Color){ 255, 255, 255, 255 }
 #define COR_BORDA_INJETADA    (Color){ 200, 30, 30, 255 }
+
+// Respingo de sangue quando a nota e acertada
+#define COR_SANGUE            (Color){ 160, 10, 20, 255 }
+#define COR_SANGUE_ESCURO     (Color){ 90, 0, 8, 255 }
 
 // Feedback de julgamento
 #define COR_PERFEITO          (Color){ 255, 215, 0, 255 }

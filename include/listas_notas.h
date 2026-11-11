@@ -1,13 +1,15 @@
 #ifndef LISTAS_NOTAS_H
 #define LISTAS_NOTAS_H
 
-typedef enum EstadoNota{PENDENTE, PERFEITO, BOM, ERRADO} EstadoNota;
+/* SEGURANDO: a cabeca de uma nota longa foi acertada e a tecla ainda esta apertada. */
+typedef enum EstadoNota{PENDENTE, PERFEITO, BOM, ERRADO, SEGURANDO} EstadoNota;
 
 typedef struct Nota{
     float tempo;
     int lane;
     EstadoNota estado;
     int injetada;
+    float duracao;      // segundos que a nota deve ser segurada (0 = nota curta)
     struct Nota *anterior;
     struct Nota *proximo;
 
@@ -29,8 +31,8 @@ void voltarCursor(Listas_notas *lista, int notas_para_voltar);
 void atualizarEstadoNota(Nota *nota, EstadoNota estado);
 void imprimirLista(Listas_notas *lista);
 void liberarLista(Listas_notas *lista);
-int contarNotasPorEstado(Listas_notas *lista, EstadoNota estado);
-float calcularPercentualAcertos(Listas_notas *lista);
+int contarNotasPorEstado(const Listas_notas *lista, EstadoNota estado);
+float calcularPercentualAcertos(const Listas_notas *lista);
 Nota *espiarProximaNota(Listas_notas *lista);
 
 #endif

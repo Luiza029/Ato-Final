@@ -105,5 +105,56 @@ int main(void){
     conferir("liberar deixa a lista vazia", lista.inicio == NULL && lista.fim == NULL && lista.cursor == NULL && lista.quantidade_de_notas == 0);
 
     printf("\n%d falha(s)\n", falhas);
+
+    Listas_notas lista_injecao;
+    criarLista(&lista_injecao);
+    inserirNota(&lista_injecao, 1.0f, 0, 0);
+    inserirNota(&lista_injecao, 2.0f, 1, 0);
+    inserirNota(&lista_injecao, 5.0f, 2, 0);
+    atualizarEstadoNota(processarProximaNota(&lista_injecao), BOM);
+    atualizarEstadoNota(processarProximaNota(&lista_injecao), BOM);
+    conferir("cursor na nota de 5.0 antes da injeção", lista_injecao.cursor != NULL && lista_injecao.cursor->tempo == 5.0f);
+
+    inserirNota(&lista_injecao, 3.0f, 3, 1);
+    ordenarNotas(&lista_injecao);
+    conferir("cursor volta para a nota injetada de 3.0", lista_injecao.cursor != NULL && lista_injecao.cursor->tempo == 3.0f);
+
+    Nota *nota_julgada;
+    while((nota_julgada = processarProximaNota(&lista_injecao)) != NULL){
+        atualizarEstadoNota(nota_julgada, ERRADO);
+    }
+    conferir("cursor em NULL depois de julgar tudo", lista_injecao.cursor == NULL);
+
+    float percentual = calcularPercentualAcertos(&lista_injecao);
+    conferir("percentual ignora notas injetadas (2 de 3)", percentual > 0.66f && percentual < 0.67f);
+
+    inserirNota(&lista_injecao, 6.0f, 0, 1);
+    inserirNota(&lista_injecao, 6.5f, 1, 1);
+    ordenarNotas(&lista_injecao);
+    conferir("injeção no fim: cursor vai para a primeira injetada", lista_injecao.cursor != NULL && lista_injecao.cursor->tempo == 6.0f);
+
+    liberarLista(&lista_injecao);
+
+    /* Notas longas: a duracao viaja junto com a nota na ordenacao e o rewind volta a nota
+       que estava sendo segurada para PENDENTE */
+    Listas_notas lista_longas;
+    criarLista(&lista_longas);
+    inserirNota(&lista_longas, 2.0f, 1, 0);
+    inserirNota(&lista_longas, 1.0f, 0, 0);
+    lista_longas.fim->duracao = 0.8f;
+    conferir("nota nova comeca curta (duracao 0)", lista_longas.inicio->duracao == 0.0f);
+
+    ordenarNotas(&lista_longas);
+    conferir("depois de ordenar, a nota longa (1.0) continua com duracao 0.8", lista_longas.inicio->tempo == 1.0f && lista_longas.inicio->duracao == 0.8f);
+
+    atualizarEstadoNota(processarProximaNota(&lista_longas), SEGURANDO);
+    conferir("contar notas SEGURANDO", contarNotasPorEstado(&lista_longas, SEGURANDO) == 1);
+    conferir("nota SEGURANDO ainda nao conta como acerto", calcularPercentualAcertos(&lista_longas) == 0.0f);
+
+    voltarCursor(&lista_longas, 1);
+    conferir("rewind volta a nota segurada para PENDENTE", lista_longas.inicio->estado == PENDENTE && lista_longas.cursor == lista_longas.inicio);
+
+    liberarLista(&lista_longas);
+
     return falhas == 0 ? 0 : 1;
 }

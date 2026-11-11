@@ -26,6 +26,7 @@ void inserirNota(Listas_notas *lista, float tempo, int lane, int injetada){
     nova->lane = lane;
     nova->estado = PENDENTE;
     nova->injetada = injetada;
+    nova->duracao = 0.0f;
     nova->anterior = NULL;
     nova->proximo = NULL;
 
@@ -164,6 +165,7 @@ static const char *nomeEstado(EstadoNota estado){
         case PERFEITO: return "PERFEITO";
         case BOM:      return "BOM";
         case ERRADO:   return "ERRADO";
+        case SEGURANDO: return "SEGURANDO";
     }
     return "DESCONHECIDO";
 }
@@ -202,7 +204,7 @@ void imprimirLista(Listas_notas *lista){
 
 
 /* Conta quantas notas estão no estado informado. */
-int contarNotasPorEstado(Listas_notas *lista, EstadoNota estado){
+int contarNotasPorEstado(const Listas_notas *lista, EstadoNota estado){
     Nota *atual = lista->inicio;
     int contador = 0;
     
@@ -219,14 +221,31 @@ int contarNotasPorEstado(Listas_notas *lista, EstadoNota estado){
 
 /* Fração de acertos (PERFEITO ou BOM), de 0 a 1, como PERCENTUAL_MINIMO_VITORIA.
    Lista vazia retorna 0. */
-float calcularPercentualAcertos(Listas_notas *lista){
-    if(lista->quantidade_de_notas == 0){
+float calcularPercentualAcertos(const Listas_notas *lista){
+    int total_do_mapa = 0;
+    int acertos = 0;
+
+    Nota *atual = lista->inicio;
+    while (atual != NULL){
+        if(atual->injetada == 1){
+            atual = atual->proximo;
+            continue;
+        }
+
+        total_do_mapa++;
+        
+        if(atual->estado == PERFEITO || atual->estado == BOM){
+            acertos++;
+        }
+
+        atual = atual->proximo;
+    }
+
+    if(total_do_mapa == 0){
         return 0.0f;
     }
 
-    int acertos = contarNotasPorEstado(lista, PERFEITO) + contarNotasPorEstado(lista, BOM);
-
-    return (float)acertos / (float)lista->quantidade_de_notas;
+    return (float) acertos / total_do_mapa;
 }
 
 
