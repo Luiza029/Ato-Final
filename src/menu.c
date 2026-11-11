@@ -4,11 +4,13 @@
 #include "constantes.h"
 #include "constantes_raylib.h"
 #include "musicas.h"
+#include "teclas.h"
 
 static const char *TEXTOS_OPCOES[QUANTIDADE_OPCOES_MENU] = {
     "Jogar",
     "Como jogar",
     "Volume",
+    "Teclas",
     "Sair"
 };
 
@@ -25,7 +27,7 @@ static const char *DESCRICOES_DIFICULDADES[QUANTIDADE_DIFICULDADES] = {
 };
 
 static const char *LINHAS_COMO_JOGAR[] = {
-    "Aperte D, F, J e K quando a nota chegar na linha.",
+    "Aperte a tecla de cada lane quando a nota chegar na linha.",
     "Nota com rastro: segure a tecla ate o fim do rastro.",
     "Acertos afastam o assassino. Erros o aproximam.",
     "Errou demais? O assassino joga notas extras na pauta.",
@@ -274,4 +276,66 @@ void salvarVolume(int volume_percentual){
         fprintf(arq, "volume %d\n", volume_percentual);
         fclose(arq);
     }
+}
+
+/* Escolhe a lane, espera a nova tecla e permite restaurar as teclas padrao. */
+int atualizarTelaTeclas(TelaTeclas *tela){
+    if(tela->aguardando){
+        ResultadoTecla resultado = tentarDefinirTeclaLane(tela->lane);
+
+        if(resultado == TECLA_ACEITA){
+            tela->aguardando = 0;
+            tela->rejeitada = 0;
+        }
+        else if(resultado == TECLA_REJEITADA){
+            tela->rejeitada = 1;
+        }
+        return 0;
+    }
+
+    tela->lane = navegarOpcoes(tela->lane, QUANTIDADE_LANES);
+
+    if(IsKeyPressed(TECLA_CONFIRMAR)){
+        tela->aguardando = 1;
+        tela->rejeitada = 0;
+    }
+    if(IsKeyPressed(KEY_R)){
+        restaurarTeclasPadrao();
+    }
+
+    return IsKeyPressed(TECLA_VOLTAR);
+}
+
+/* Lista as lanes com a tecla de cada uma e a mensagem de ajuda. */
+void desenharTelaTeclas(const TelaTeclas *tela){
+    int centro_x = LARGURA_JANELA / 2;
+
+    DrawRectangle(0, 0, LARGURA_JANELA, ALTURA_JANELA, COR_FUNDO_MENU);
+
+    desenharTextoCentralizado("Teclas", centro_x, POSICAO_Y_TITULO_MENU, TAMANHO_FONTE_TITULO, COR_TEXTO_DESTAQUE);
+
+    int posicao_y = POSICAO_Y_TITULO_MENU + TAMANHO_FONTE_TITULO + ESPACO_LINHAS_MENU;
+    for(int lane = 0; lane < QUANTIDADE_LANES; lane++){
+        const char *tecla = (tela->aguardando && lane == tela->lane) ? "..." : rotulos_lanes[lane];
+        Color cor = (lane == tela->lane) ? COR_TEXTO_DESTAQUE : Fade(COR_TEXTO, OPACIDADE_OPCAO_MENU);
+
+        desenharTextoCentralizado(TextFormat("Lane %d:  %s", lane + 1, tecla), centro_x, posicao_y, TAMANHO_FONTE_OPCOES_MENU, cor);
+        posicao_y += ESPACO_LINHAS_MENU;
+    }
+
+    const char *mensagem = "ENTER para trocar a tecla da lane escolhida";
+    Color cor_mensagem = COR_TEXTO;
+
+    if(tela->rejeitada){
+        mensagem = "Tecla invalida ou ja usada. Use letras, numeros ou Ç.";
+        cor_mensagem = COR_ERRADO;
+    }
+    else if(tela->aguardando){
+        mensagem = "Aperte a nova tecla";
+        cor_mensagem = COR_PERFEITO;
+    }
+
+    desenharTextoCentralizado(mensagem, centro_x, posicao_y + ESPACO_LINHAS_MENU / 2, TAMANHO_FONTE_TEXTO, cor_mensagem);
+
+    desenharTextoCentralizado("Setas e ENTER para trocar, R restaura, BACKSPACE volta", centro_x, ALTURA_JANELA - MARGEM_TELA - TAMANHO_FONTE_INFO, TAMANHO_FONTE_INFO, Fade(COR_TEXTO, OPACIDADE_OPCAO_MENU));
 }

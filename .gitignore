@@ -62,6 +62,7 @@ compile_flags.txt
 
 # Configuracao pessoal de cada jogador (volume)
 configuracao.txt
+teclas.txt
 
 jogo
 teste_lista

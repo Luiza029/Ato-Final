@@ -93,6 +93,7 @@
 
 //                         VOLUME
 #define CAMINHO_CONFIGURACAO "configuracao.txt"
+#define CAMINHO_TECLAS "teclas.txt"
 #define VOLUME_PADRAO 50                    // em %, as musicas baixadas costumam vir altas
 #define VOLUME_MAXIMO 100
 #define PASSO_VOLUME 5

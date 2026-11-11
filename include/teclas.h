@@ -18,4 +18,10 @@ void restaurarTeclasPadrao(void);
 /* Le a tecla apertada neste frame e tenta atribuir a lane. */
 ResultadoTecla tentarDefinirTeclaLane(int lane);
 
+/* Le as teclas salvas em CAMINHO_TECLAS; se faltar ou for invalido, usa D F J K. */
+void carregarTeclas(void);
+
+/* Grava as teclas atuais em CAMINHO_TECLAS. */
+void salvarTeclas(void);
+
 #endif

@@ -5,6 +5,7 @@ typedef enum OpcaoMenu{
     MENU_JOGAR,
     MENU_COMO_JOGAR,
     MENU_VOLUME,
+    MENU_TECLAS,
     MENU_SAIR,
     QUANTIDADE_OPCOES_MENU
 } OpcaoMenu;
@@ -37,5 +38,15 @@ void desenharVolume(int volume_percentual, const char *nome_previa);
 /* Le o volume salvo em CAMINHO_CONFIGURACAO (ou VOLUME_PADRAO se nao houver) e salva o escolhido. */
 int carregarVolume(void);
 void salvarVolume(int volume_percentual);
+
+typedef struct TelaTeclas{
+    int lane;
+    int aguardando;
+    int rejeitada;
+} TelaTeclas;
+
+/* Tela de teclas: ENTER troca a tecla da lane, R restaura. Retorna 1 quando o jogador volta ao menu. */
+int atualizarTelaTeclas(TelaTeclas *tela);
+void desenharTelaTeclas(const TelaTeclas *tela);
 
 #endif

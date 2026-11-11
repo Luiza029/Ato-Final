@@ -4,6 +4,7 @@
 #include "interface.h"
 #include "constantes.h"
 #include "constantes_raylib.h"
+#include "teclas.h"
 
 static Texture2D textura_icone_rewind;
 static bool tem_icone_rewind = false;

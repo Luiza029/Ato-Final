@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include "menu.h"
+#include "teclas.h"
 #include "gerador.h"
 #include "musicas.h"
 #include "arquivos_windows.h"
@@ -16,6 +17,7 @@ typedef enum Tela{
     TELA_MENU,
     TELA_COMO_JOGAR,
     TELA_VOLUME,
+    TELA_TECLAS,
     TELA_MUSICA,
     TELA_DIFICULDADE,
     TELA_JOGO
@@ -119,6 +121,7 @@ int main(void){
 
     // Volume geral do jogo (de 0 a 100%), guardado entre uma execucao e outra
     int volume = carregarVolume();
+    carregarTeclas();
     SetMasterVolume((float)volume / VOLUME_MAXIMO);
 
     Music previa_volume = { 0 };
@@ -143,6 +146,7 @@ int main(void){
     EstadoJogo jogo;
     Tela tela_atual = TELA_MENU;
     OpcaoMenu opcao_menu = MENU_JOGAR;
+    TelaTeclas tela_teclas = {0, 0, 0};
     Dificuldade dificuldade = DIFICULDADE_FACIL;
     bool partida_ativa = false;
     bool rodando = true;
@@ -181,6 +185,12 @@ int main(void){
                     tem_previa_volume = abrirPreviaVolume(&previa_volume, &musicas, opcao_musica, nome_previa_volume);
                     tela_atual = TELA_VOLUME;
                 }
+                else if(opcao_menu == MENU_TECLAS){
+                    tela_teclas.lane = 0;
+                    tela_teclas.aguardando = 0;
+                    tela_teclas.rejeitada = 0;
+                    tela_atual = TELA_TECLAS;
+                }
                 else{
                     rodando = false;
                 }
@@ -211,6 +221,13 @@ int main(void){
                     tem_previa_volume = false;
                 }
 
+                tela_atual = TELA_MENU;
+            }
+        }
+
+        else if(tela_atual == TELA_TECLAS){
+            if(atualizarTelaTeclas(&tela_teclas)){
+                salvarTeclas();
                 tela_atual = TELA_MENU;
             }
         }
@@ -343,6 +360,10 @@ int main(void){
 
         else if(tela_atual == TELA_VOLUME){
             desenharVolume(volume, nome_previa_volume);
+        }
+
+        else if(tela_atual == TELA_TECLAS){
+            desenharTelaTeclas(&tela_teclas);
         }
 
         else if(tela_atual == TELA_MUSICA){

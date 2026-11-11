@@ -1,6 +1,7 @@
 #include <string.h>
 #include "raylib.h"
 #include "teclas.h"
+#include <stdio.h>
 
 int teclas_lanes[QUANTIDADE_LANES] = { KEY_D, KEY_F, KEY_J, KEY_K };
 char rotulos_lanes[QUANTIDADE_LANES][4] = { "D", "F", "J", "K" };
@@ -68,4 +69,64 @@ ResultadoTecla tentarDefinirTeclaLane(int lane)
     teclas_lanes[lane] = tecla;
     montarRotulo(tecla, rotulos_lanes[lane]);
     return TECLA_ACEITA;
+}
+
+/* Le as 4 teclas do arquivo; se algo estiver errado, volta para as teclas padrao. */
+void carregarTeclas(void)
+{
+    FILE *arq = fopen(CAMINHO_TECLAS, "r");
+    int lidas[QUANTIDADE_LANES];
+    int validas = (arq != NULL);
+
+    for (int i = 0; i < QUANTIDADE_LANES && validas; i++)
+    {
+        validas = (fscanf(arq, "%d", &lidas[i]) == 1);
+    }
+
+    if (arq != NULL)
+    {
+        fclose(arq);
+    }
+
+    for (int i = 0; i < QUANTIDADE_LANES && validas; i++)
+    {
+        if (!teclaPermitida(lidas[i]))
+        {
+            validas = 0;
+        }
+        for (int j = 0; j < i; j++)
+        {
+            if (lidas[j] == lidas[i])
+            {
+                validas = 0;
+            }
+        }
+    }
+
+    if (!validas)
+    {
+        restaurarTeclasPadrao();
+        return;
+    }
+
+    for (int i = 0; i < QUANTIDADE_LANES; i++)
+    {
+        teclas_lanes[i] = lidas[i];
+        montarRotulo(lidas[i], rotulos_lanes[i]);
+    }
+}
+
+/* Grava os codigos das 4 teclas em uma linha, separados por espaco. */
+void salvarTeclas(void)
+{
+    FILE *arq = fopen(CAMINHO_TECLAS, "w");
+
+    if (arq != NULL)
+    {
+        for (int i = 0; i < QUANTIDADE_LANES; i++)
+        {
+            fprintf(arq, "%d%c", teclas_lanes[i], i == QUANTIDADE_LANES - 1 ? '\n' : ' ');
+        }
+        fclose(arq);
+    }
 }
