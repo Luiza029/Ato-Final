@@ -308,7 +308,7 @@ void desenharPauta(const EstadoJogo *jogo){
         int centro_y = calcularCentroYLane(lane);
         DrawLine(0, centro_y, LARGURA_JANELA, centro_y, COR_LINHA_LANE);
         DrawCircleLines(POSICAO_X_LINHA_ACERTO, centro_y, TAMANHO_NOTA / 2, COR_LINHA_ACERTO);
-        DrawText(ROTULOS_LANES[lane], MARGEM_TELA, centro_y - TAMANHO_FONTE_INFO / 2, TAMANHO_FONTE_INFO, COR_TEXTO);
+        DrawText(rotulos_lanes[lane], MARGEM_TELA, centro_y - TAMANHO_FONTE_INFO / 2, TAMANHO_FONTE_INFO, COR_TEXTO);
     }
 
     DrawRectangle(POSICAO_X_LINHA_ACERTO - ESPESSURA_LINHA_ACERTO / 2, POSICAO_Y_PAUTA,ESPESSURA_LINHA_ACERTO, ALTURA_PAUTA, COR_LINHA_ACERTO);

@@ -291,12 +291,12 @@ int main(void){
                 }
 
                 for(int i = 0; i < QUANTIDADE_LANES; i++){
-                    if(IsKeyPressed(TECLAS_LANES[i])){
+                    if(IsKeyPressed(teclas_lanes[i])){
                         tratarTeclaLane(&jogo, i);
                     }
 
                     // Soltar a tecla importa nas notas longas (soltar antes do fim e erro)
-                    if(IsKeyReleased(TECLAS_LANES[i])){
+                    if(IsKeyReleased(teclas_lanes[i])){
                         soltarTeclaLane(&jogo, i);
                     }
                 }
