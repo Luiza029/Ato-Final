@@ -12,13 +12,6 @@
 
 /* ---------- TECLAS ---------- */
 
-// Uma tecla por lane, na ordem das lanes (0 a 3).
-// Uso: IsKeyPressed(TECLAS_LANES[lane])
-static const int TECLAS_LANES[QUANTIDADE_LANES] = { KEY_D, KEY_F, KEY_J, KEY_K };
-
-// Rótulo desenhado embaixo de cada lane, na mesma ordem das teclas acima
-static const char *const ROTULOS_LANES[QUANTIDADE_LANES] = { "D", "F", "J", "K" };
-
 #define TECLA_REWIND      KEY_SPACE
 #define TECLA_CONFIRMAR   KEY_ENTER
 #define TECLA_VOLTAR      KEY_BACKSPACE
