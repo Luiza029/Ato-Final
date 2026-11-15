@@ -200,6 +200,19 @@
 #define ESPACO_ICONES_REWIND 12
 #define OPACIDADE_REWIND_GASTO 0.25f
 
+//              FUNDO DA CENA (camadas em pixel art que andam)
+#define CAMINHO_CENA_CEU            "assets/cena/cena_ceu.png"
+#define CAMINHO_CENA_PREDIOS_LONGE  "assets/cena/cena_predios_longe.png"
+#define CAMINHO_CENA_PREDIOS_PERTO  "assets/cena/cena_predios_perto.png"
+#define CAMINHO_CENA_NEBLINA        "assets/cena/cena_neblina.png"
+#define CAMINHO_CENA_CHAO           "assets/cena/cena_chao.png"
+#define VELOCIDADE_CENA_CEU            0.0f
+#define VELOCIDADE_CENA_PREDIOS_LONGE  4.0f
+#define VELOCIDADE_CENA_PREDIOS_PERTO 10.0f
+#define VELOCIDADE_CENA_NEBLINA       16.0f
+#define VELOCIDADE_CENA_CHAO          40.0f
+
+
 #define CHAO_Y (ALTURA_CENA - 40)
 #define SOBREVIVENTE_X 500
 #define SOBREVIVENTE_LARGURA 70

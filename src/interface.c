@@ -16,6 +16,36 @@ static Texture2D textura_assassino;
 static bool tem_sprite_assassino = false;
 static Rectangle recorte_assassino;
 
+/* Fundo da cena em camadas, da mais distante para a mais proxima. Cada camada anda numa
+   velocidade (as distantes mais devagar), o que da a sensacao de que os dois estao correndo. */
+typedef enum CamadaCena{
+    CAMADA_CEU,
+    CAMADA_PREDIOS_LONGE,
+    CAMADA_PREDIOS_PERTO,
+    CAMADA_NEBLINA,
+    CAMADA_CHAO,
+    QUANTIDADE_CAMADAS_CENA
+} CamadaCena;
+
+static const char *CAMINHOS_CAMADAS_CENA[QUANTIDADE_CAMADAS_CENA] = {
+    CAMINHO_CENA_CEU,
+    CAMINHO_CENA_PREDIOS_LONGE,
+    CAMINHO_CENA_PREDIOS_PERTO,
+    CAMINHO_CENA_NEBLINA,
+    CAMINHO_CENA_CHAO
+};
+
+static const float VELOCIDADES_CAMADAS_CENA[QUANTIDADE_CAMADAS_CENA] = {
+    VELOCIDADE_CENA_CEU,
+    VELOCIDADE_CENA_PREDIOS_LONGE,
+    VELOCIDADE_CENA_PREDIOS_PERTO,
+    VELOCIDADE_CENA_NEBLINA,
+    VELOCIDADE_CENA_CHAO
+};
+
+static Texture2D texturas_camadas_cena[QUANTIDADE_CAMADAS_CENA];
+static bool tem_camada_cena[QUANTIDADE_CAMADAS_CENA] = { false };
+
 /* ---------- Funções auxiliares (privadas deste arquivo) ---------- */
 
 /* Posição X de uma nota na tela, a partir do tempo dela e do tempo da música. */
@@ -214,6 +244,63 @@ static void desenharAssassino(float assassino_x, int rebobinando){
     DrawTexturePro(textura_assassino, origem, destino, (Vector2){ 0.0f, 0.0f }, 0.0f, WHITE);
 }
 
+/* Carrega as camadas do fundo que existirem. Sem uma camada, o fundo simples continua no lugar. */
+static void carregarFundoCena(void){
+    for(int camada = 0; camada < QUANTIDADE_CAMADAS_CENA; camada++){
+        if(!FileExists(CAMINHOS_CAMADAS_CENA[camada])){
+            continue;
+        }
+
+        texturas_camadas_cena[camada] = LoadTexture(CAMINHOS_CAMADAS_CENA[camada]);
+        // Pixel art ampliada sem borrar, e a imagem se repete quando passa da borda
+        SetTextureFilter(texturas_camadas_cena[camada], TEXTURE_FILTER_POINT);
+        SetTextureWrap(texturas_camadas_cena[camada], TEXTURE_WRAP_REPEAT);
+        tem_camada_cena[camada] = true;
+    }
+}
+
+static void descarregarFundoCena(void){
+    for(int camada = 0; camada < QUANTIDADE_CAMADAS_CENA; camada++){
+        if(tem_camada_cena[camada]){
+            UnloadTexture(texturas_camadas_cena[camada]);
+            tem_camada_cena[camada] = false;
+        }
+    }
+}
+
+/* Desenha uma camada esticada em destino, deslocada para a esquerda conforme o tempo.
+   Como a textura repete (TEXTURE_WRAP_REPEAT), o que sai pela esquerda volta pela direita sem emenda.
+   O tempo e o da partida: no rewind o cenario anda para tras, junto com a musica. */
+static void desenharCamadaCena(CamadaCena camada, float tempo, Rectangle destino){
+    Texture2D textura = texturas_camadas_cena[camada];
+    Rectangle origem = { tempo * VELOCIDADES_CAMADAS_CENA[camada], 0.0f, (float)textura.width, (float)textura.height };
+
+    DrawTexturePro(textura, origem, destino, (Vector2){ 0.0f, 0.0f }, 0.0f, WHITE);
+}
+
+/* Fundo da cena: ceu, predios, neblina e calcada. Camada que nao existe vira o fundo simples. */
+static void desenharFundoCena(float tempo){
+    Rectangle cena_inteira = { 0.0f, 0.0f, (float)LARGURA_JANELA, (float)ALTURA_CENA };
+    Rectangle faixa_chao = { 0.0f, (float)CHAO_Y, (float)LARGURA_JANELA, (float)(ALTURA_CENA - CHAO_Y) };
+
+    if(!tem_camada_cena[CAMADA_CEU]){
+        DrawRectangle(0, 0, LARGURA_JANELA, ALTURA_CENA, COR_FUNDO_CENA);
+    }
+
+    for(int camada = CAMADA_CEU; camada <= CAMADA_NEBLINA; camada++){
+        if(tem_camada_cena[camada]){
+            desenharCamadaCena((CamadaCena)camada, tempo, cena_inteira);
+        }
+    }
+
+    if(tem_camada_cena[CAMADA_CHAO]){
+        desenharCamadaCena(CAMADA_CHAO, tempo, faixa_chao);
+    }
+    else{
+        DrawRectangle(0, CHAO_Y, LARGURA_JANELA, ALTURA_CENA - CHAO_Y, COR_LINHA_LANE);
+    }
+}
+
 /* ---------- Funções públicas (declaradas em interface.h) ---------- */
 
 void carregarInterface(void){
@@ -225,6 +312,7 @@ void carregarInterface(void){
     }
 
     carregarSpriteAssassino();
+    carregarFundoCena();
 }
 
 void descarregarInterface(void){
@@ -237,12 +325,13 @@ void descarregarInterface(void){
         UnloadTexture(textura_assassino);
         tem_sprite_assassino = false;
     }
+
+    descarregarFundoCena();
 }
 
 /* Cena de cima: sobrevivente, assassino e a pontuacao no canto. O sobrevivente ainda e um retangulo. */
 void desenharCena(const EstadoJogo *jogo){
-    DrawRectangle(0, 0, LARGURA_JANELA, ALTURA_CENA, COR_FUNDO_CENA);
-    DrawRectangle(0, CHAO_Y, LARGURA_JANELA, ALTURA_CENA - CHAO_Y, COR_LINHA_LANE);
+    desenharFundoCena(jogo->tempo_atual);
 
     DrawRectangle(SOBREVIVENTE_X, CHAO_Y - SOBREVIVENTE_ALTURA, SOBREVIVENTE_LARGURA, SOBREVIVENTE_ALTURA, SKYBLUE);
 
