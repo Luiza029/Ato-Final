@@ -200,6 +200,9 @@
 #define CAMINHO_SPRITE_ASSASSINO "assets/sprites/Sprite_killer.png"
 #define QUADROS_SPRITE_ASSASSINO 6         // a imagem tem 6 poses de corrida lado a lado
 #define QUADROS_POR_SEGUNDO_ASSASSINO 10.0f
+#define CAMINHO_SPRITE_SOBREVIVENTE "assets/sprites/Sprite_surv.png"
+#define QUADROS_SPRITE_SOBREVIVENTE 6      // tambem 6 poses de corrida lado a lado
+#define QUADROS_POR_SEGUNDO_SOBREVIVENTE 10.0f
 #define TRANSPARENCIA_MINIMA_SPRITE 0.1f    // pixel com menos opacidade que isso conta como fundo vazio
 #define TAMANHO_FONTE_PONTOS 32
 #define LARGURA_BARRA_PROGRESSO 660
@@ -223,9 +226,9 @@
 
 #define CHAO_Y (ALTURA_CENA - 40)
 #define SOBREVIVENTE_X 500
-#define SOBREVIVENTE_LARGURA 70
+#define SOBREVIVENTE_LARGURA 70            // so usada se o sprite faltar (com sprite, sai da proporcao da imagem)
 #define SOBREVIVENTE_ALTURA 140
-#define ASSASSINO_LARGURA 80
+#define ASSASSINO_LARGURA 80               // so usada se o sprite faltar
 #define ASSASSINO_ALTURA 160
 #define ASSASSINO_X_LONGE (MARGEM_TELA)
 // O ponto "perto" do assassino e calculado na interface: SOBREVIVENTE_X - largura do sprite
