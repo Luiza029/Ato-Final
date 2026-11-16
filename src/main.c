@@ -112,7 +112,26 @@ static bool abrirPreviaVolume(Music *previa, const FilePathList *musicas, int op
     return true;
 }
 
+/* Desenha a imagem do jogo (sempre 1280x720) esticada para o tamanho real da janela,
+   mantendo a proporcao: sobra preta nas laterais ou em cima e embaixo, se o monitor
+   nao for 16:9. Na janela normal a escala e 1 e a imagem fica igual. */
+static void desenharTelaNaJanela(RenderTexture2D tela_jogo){
+    float escala = fminf((float)GetScreenWidth() / LARGURA_JANELA, (float)GetScreenHeight() / ALTURA_JANELA);
+    float largura = LARGURA_JANELA * escala;
+    float altura = ALTURA_JANELA * escala;
+
+    // A textura de desenho fica de cabeca para baixo no OpenGL: a altura negativa desvira
+    Rectangle origem = { 0.0f, 0.0f, (float)tela_jogo.texture.width, -(float)tela_jogo.texture.height };
+    Rectangle destino = { (GetScreenWidth() - largura) / 2.0f, (GetScreenHeight() - altura) / 2.0f, largura, altura };
+
+    DrawTexturePro(tela_jogo.texture, origem, destino, (Vector2){ 0.0f, 0.0f }, 0.0f, WHITE);
+}
+
 int main(void){
+    // VSync: a imagem nova so vai para a tela quando o monitor termina de desenhar a anterior.
+    // Sem isso, em tela cheia o monitor pode mostrar metade de um frame e metade do outro
+    // (a "linha cortando" a imagem, mais visivel nas notas, que andam rapido).
+    SetConfigFlags(FLAG_VSYNC_HINT);
     InitWindow(LARGURA_JANELA, ALTURA_JANELA, TITULO_JANELA);
     InitAudioDevice();
     SetTargetFPS(FPS_ALVO);
@@ -120,6 +139,10 @@ int main(void){
     carregarMenu();
     carregarInterface();
     carregarSons();
+
+    // Tudo e desenhado nesta imagem de 1280x720, que depois e esticada para a janela (tela cheia)
+    RenderTexture2D tela_jogo = LoadRenderTexture(LARGURA_JANELA, ALTURA_JANELA);
+    SetTextureFilter(tela_jogo.texture, TEXTURE_FILTER_BILINEAR);
 
     // Volume geral do jogo (de 0 a 100%), guardado entre uma execucao e outra
     int volume = carregarVolume();
@@ -174,6 +197,12 @@ int main(void){
         }
         else if(!escolhendo_tecla && backspace_volta && IsKeyPressed(TECLA_VOLTAR)){
             tocarSomVoltar();
+        }
+
+        // F11 liga e desliga a tela cheia em qualquer tela do jogo. "Sem borda": a janela ocupa o
+        // monitor inteiro sem mudar a resolucao dele, e desenharTelaNaJanela estica a imagem.
+        if(IsKeyPressed(TECLA_TELA_CHEIA)){
+            ToggleBorderlessWindowed();
         }
 
         // Musica arrastada para a janela (fora da partida): vai para a tela de musicas e e adicionada
@@ -369,7 +398,7 @@ int main(void){
             }
         }
 
-        BeginDrawing();
+        BeginTextureMode(tela_jogo);
         ClearBackground(BLACK);
 
         if(tela_atual == TELA_MENU){
@@ -404,6 +433,11 @@ int main(void){
             desenharJogo(&jogo);
         }
 
+        EndTextureMode();
+
+        BeginDrawing();
+        ClearBackground(BLACK);
+        desenharTelaNaJanela(tela_jogo);
         EndDrawing();
     }
 
@@ -420,6 +454,7 @@ int main(void){
     }
 
     descarregarListaMusicas(musicas);
+    UnloadRenderTexture(tela_jogo);
     descarregarSons();
     descarregarInterface();
     descarregarMenu();

@@ -32,7 +32,8 @@ static const char *LINHAS_COMO_JOGAR[] = {
     "Acertos afastam o assassino. Erros o aproximam.",
     "Errou demais? O assassino joga notas extras na pauta.",
     "ESPACO: rewind, volta algumas notas (usos limitados).",
-    "Se o assassino te alcancar, fim de jogo."
+    "Se o assassino te alcancar, fim de jogo.",
+    "F11: liga e desliga a tela cheia."
 };
 #define QUANTIDADE_LINHAS_COMO_JOGAR (int)(sizeof(LINHAS_COMO_JOGAR) / sizeof(LINHAS_COMO_JOGAR[0]))
 
