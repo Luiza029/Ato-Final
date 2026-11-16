@@ -10,6 +10,7 @@
 #include "teclas.h"
 #include "gerador.h"
 #include "musicas.h"
+#include "sons.h"
 #include "arquivos_windows.h"
 #include <math.h>
 
@@ -118,6 +119,7 @@ int main(void){
     srand((unsigned int)time(NULL));
     carregarMenu();
     carregarInterface();
+    carregarSons();
 
     // Volume geral do jogo (de 0 a 100%), guardado entre uma execucao e outra
     int volume = carregarVolume();
@@ -157,6 +159,21 @@ int main(void){
         if(musica_pendente[0] != '\0'){
             processarMusicaNova(musica_pendente, &musicas, &opcao_musica, mensagem_musica);
             musica_pendente[0] = '\0';
+        }
+
+        // Sons do menu, olhando a tela antes de ela mudar neste frame. ENTER confirma em todas as
+        // telas fora da partida (e na tela final); BACKSPACE so toca onde ele volta de tela.
+        // Enquanto a tela de teclas espera a tecla nova, nenhuma tecla faz som.
+        bool na_tela_final = tela_atual == TELA_JOGO && (jogo.fase == FASE_VITORIA || jogo.fase == FASE_DERROTA);
+        bool escolhendo_tecla = tela_atual == TELA_TECLAS && tela_teclas.aguardando;
+        bool backspace_volta = tela_atual == TELA_VOLUME || tela_atual == TELA_TECLAS ||
+                               tela_atual == TELA_MUSICA || tela_atual == TELA_DIFICULDADE;
+
+        if(!escolhendo_tecla && (tela_atual != TELA_JOGO || na_tela_final) && IsKeyPressed(TECLA_CONFIRMAR)){
+            tocarSomConfirmar();
+        }
+        else if(!escolhendo_tecla && backspace_volta && IsKeyPressed(TECLA_VOLTAR)){
+            tocarSomVoltar();
         }
 
         // Musica arrastada para a janela (fora da partida): vai para a tela de musicas e e adicionada
@@ -321,6 +338,11 @@ int main(void){
                 if(IsKeyPressed(TECLA_REWIND)){
                     usarRewind(&jogo);
 
+                    // So toca se o rewind aconteceu (ainda havia rewind e notas para voltar)
+                    if(jogo.fase == FASE_REWIND){
+                        tocarSomRewind();
+                    }
+
                     // A musica para durante a animacao e volta do ponto novo depois
                     if(tem_musica && musica_iniciada && jogo.fase == FASE_REWIND){
                         PauseMusicStream(musica);
@@ -398,6 +420,7 @@ int main(void){
     }
 
     descarregarListaMusicas(musicas);
+    descarregarSons();
     descarregarInterface();
     descarregarMenu();
     CloseAudioDevice();

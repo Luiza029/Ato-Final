@@ -57,7 +57,7 @@
 //                        REWIND
 #define REWINDS_MAXIMOS 1
 #define NOTAS_POR_REWIND 8
-#define DURACAO_ANIMACAO_REWIND 0.6f
+#define DURACAO_ANIMACAO_REWIND 1.5f    // a musica fica pausada enquanto a fita "volta"
 #define RESPIRO_APOS_REWIND 1.0f
 
 //                        VITÓRIA
@@ -81,6 +81,14 @@
 #define CAMINHO_MAPA_MEDIO   CAMINHO_MAPA_PADRAO
 #define CAMINHO_MAPA_DIFICIL CAMINHO_MAPA_PADRAO
 #define CAMINHO_FUNDO_MENU "assets/menu_fundo.png"
+
+//                    EFEITOS SONOROS
+#define CAMINHO_SOM_CONFIRMAR "assets/sons/confirmar.mp3"
+#define CAMINHO_SOM_VOLTAR "assets/sons/voltar.wav"
+#define CAMINHO_SOM_REWIND "assets/sons/rewind.wav"     // 1,5 s, igual a DURACAO_ANIMACAO_REWIND
+#define VOLUME_SOM_CONFIRMAR 0.8f            // de 0 a 1, multiplicado pelo volume geral do jogo
+#define VOLUME_SOM_VOLTAR 0.6f
+#define VOLUME_SOM_REWIND 1.0f
 #define CAMINHO_MUSICA_PADRAO "assets/musicas/halloween_theme.mp3"
 
 //                  BIBLIOTECA DE MUSICAS
@@ -228,12 +236,13 @@
 #define OPACIDADE_LINHAS_REWIND 0.1f
 
 #define POSICAO_Y_TITULO_MENU 120
-#define POSICAO_Y_OPCOES_MENU 320
+#define POSICAO_Y_OPCOES_MENU 390             // menu principal: opcoes abaixo do titulo da capa
 #define ESPACO_LINHAS_MENU 50
 
 #define LARGURA_COLUNA_MENU (LARGURA_JANELA - ALTURA_JANELA)
 #define POSICAO_X_OPCOES_MENU 110
 #define TAMANHO_FONTE_OPCOES_MENU 44
 #define ESPACO_OPCOES_MENU 72
+#define ESPACO_OPCOES_MENU_PRINCIPAL 56       // menu principal: 5 opcoes cabem entre o titulo e o rodape
 #define OPACIDADE_OPCAO_MENU 0.6f
 #endif

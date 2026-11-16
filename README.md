@@ -75,7 +75,7 @@ vendor/    raylib pré-compilada para Windows
 ## Créditos
 
 - Músicas: "Halloween Theme" (John Carpenter) e "This Is Halloween" (Danny Elfman), usadas apenas para fins educacionais.
-- Sprite do assassino: Remi Cunha - Design 4°B
+- Capa do jogo, sprite do assassino e sobrevivente: Remi Cunha - Design 4°B
 - Biblioteca gráfica: [raylib](https://www.raylib.com/) (licença zlib).
 
 ## Equipe
