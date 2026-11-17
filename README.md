@@ -27,16 +27,29 @@ winget install --id MSYS2.MSYS2 -e
 C:\msys64\usr\bin\bash.exe -lc "pacman -S --noconfirm mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-make"
 ```
 
+### Instalando as dependências no macOS (só uma vez)
+
+No Terminal (o [Homebrew](https://brew.sh) precisa estar instalado):
+
+```
+xcode-select --install
+brew install raylib
+```
+
+O `makefile` usa `brew --prefix` para achar a raylib, então funciona tanto em Mac com chip Apple Silicon quanto Intel. A pasta `vendor/raylib` é só para o Windows e não é usada no macOS.
+
 ## Como compilar e executar
 
-Na pasta do projeto (a que tem o `makefile`):
+Na pasta do projeto (a que tem o `makefile`). No Windows use `mingw32-make`; no macOS use `make`:
 
 | Comando (Windows) | Comando (macOS) | O que faz |
 |---|---|---|
-| `mingw32-make` | compila o jogo |
-| `mingw32-make rodar` | compila e abre o jogo |
-| `mingw32-make teste` | compila e roda o teste da lista no terminal |
-| `mingw32-make limpar` | apaga os executáveis |
+| `mingw32-make` | `make` | compila o jogo |
+| `mingw32-make rodar` | `make rodar` | compila e abre o jogo |
+| `mingw32-make teste` | `make teste` | compila e roda o teste da lista no terminal |
+| `mingw32-make limpar` | `make limpar` | apaga os executáveis |
+
+O executável é `jogo.exe` no Windows e `jogo` no macOS. As funções que dependem do sistema (janela de escolher música e cópia de arquivos) ficam em `src/arquivos_windows.c` e `src/arquivos_posix.c`; o `makefile` escolhe o arquivo certo sozinho.
 
 O jogo precisa ser executado a partir da pasta do projeto, porque procura as músicas e os mapas em `assets/` e `mapas/`.
 
