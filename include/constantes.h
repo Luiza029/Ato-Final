@@ -57,7 +57,7 @@
 //                        REWIND
 #define REWINDS_MAXIMOS 1
 #define NOTAS_POR_REWIND 8
-#define DURACAO_ANIMACAO_REWIND 0.6f
+#define DURACAO_ANIMACAO_REWIND 1.5f    // a musica fica pausada enquanto a fita "volta"
 #define RESPIRO_APOS_REWIND 1.0f
 
 //                        VITÓRIA
@@ -81,6 +81,14 @@
 #define CAMINHO_MAPA_MEDIO   CAMINHO_MAPA_PADRAO
 #define CAMINHO_MAPA_DIFICIL CAMINHO_MAPA_PADRAO
 #define CAMINHO_FUNDO_MENU "assets/menu_fundo.png"
+
+//                    EFEITOS SONOROS
+#define CAMINHO_SOM_CONFIRMAR "assets/sons/confirmar.mp3"
+#define CAMINHO_SOM_VOLTAR "assets/sons/voltar.wav"
+#define CAMINHO_SOM_REWIND "assets/sons/rewind.wav"     // 1,5 s, igual a DURACAO_ANIMACAO_REWIND
+#define VOLUME_SOM_CONFIRMAR 0.8f            // de 0 a 1, multiplicado pelo volume geral do jogo
+#define VOLUME_SOM_VOLTAR 0.6f
+#define VOLUME_SOM_REWIND 1.0f
 #define CAMINHO_MUSICA_PADRAO "assets/musicas/halloween_theme.mp3"
 
 //                  BIBLIOTECA DE MUSICAS
@@ -192,6 +200,9 @@
 #define CAMINHO_SPRITE_ASSASSINO "assets/sprites/Sprite_killer.png"
 #define QUADROS_SPRITE_ASSASSINO 6         // a imagem tem 6 poses de corrida lado a lado
 #define QUADROS_POR_SEGUNDO_ASSASSINO 10.0f
+#define CAMINHO_SPRITE_SOBREVIVENTE "assets/sprites/Sprite_surv.png"
+#define QUADROS_SPRITE_SOBREVIVENTE 6      // tambem 6 poses de corrida lado a lado
+#define QUADROS_POR_SEGUNDO_SOBREVIVENTE 10.0f
 #define TRANSPARENCIA_MINIMA_SPRITE 0.1f    // pixel com menos opacidade que isso conta como fundo vazio
 #define TAMANHO_FONTE_PONTOS 32
 #define LARGURA_BARRA_PROGRESSO 660
@@ -215,9 +226,9 @@
 
 #define CHAO_Y (ALTURA_CENA - 40)
 #define SOBREVIVENTE_X 500
-#define SOBREVIVENTE_LARGURA 70
+#define SOBREVIVENTE_LARGURA 70            // so usada se o sprite faltar (com sprite, sai da proporcao da imagem)
 #define SOBREVIVENTE_ALTURA 140
-#define ASSASSINO_LARGURA 80
+#define ASSASSINO_LARGURA 80               // so usada se o sprite faltar
 #define ASSASSINO_ALTURA 160
 #define ASSASSINO_X_LONGE (MARGEM_TELA)
 // O ponto "perto" do assassino e calculado na interface: SOBREVIVENTE_X - largura do sprite
@@ -228,12 +239,13 @@
 #define OPACIDADE_LINHAS_REWIND 0.1f
 
 #define POSICAO_Y_TITULO_MENU 120
-#define POSICAO_Y_OPCOES_MENU 320
+#define POSICAO_Y_OPCOES_MENU 390             // menu principal: opcoes abaixo do titulo da capa
 #define ESPACO_LINHAS_MENU 50
 
 #define LARGURA_COLUNA_MENU (LARGURA_JANELA - ALTURA_JANELA)
 #define POSICAO_X_OPCOES_MENU 110
 #define TAMANHO_FONTE_OPCOES_MENU 44
 #define ESPACO_OPCOES_MENU 72
+#define ESPACO_OPCOES_MENU_PRINCIPAL 56       // menu principal: 5 opcoes cabem entre o titulo e o rodape
 #define OPACIDADE_OPCAO_MENU 0.6f
 #endif

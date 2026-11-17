@@ -10,6 +10,7 @@
 #include "teclas.h"
 #include "gerador.h"
 #include "musicas.h"
+#include "sons.h"
 #include "arquivos_windows.h"
 #include <math.h>
 
@@ -111,13 +112,37 @@ static bool abrirPreviaVolume(Music *previa, const FilePathList *musicas, int op
     return true;
 }
 
+/* Desenha a imagem do jogo (sempre 1280x720) esticada para o tamanho real da janela,
+   mantendo a proporcao: sobra preta nas laterais ou em cima e embaixo, se o monitor
+   nao for 16:9. Na janela normal a escala e 1 e a imagem fica igual. */
+static void desenharTelaNaJanela(RenderTexture2D tela_jogo){
+    float escala = fminf((float)GetScreenWidth() / LARGURA_JANELA, (float)GetScreenHeight() / ALTURA_JANELA);
+    float largura = LARGURA_JANELA * escala;
+    float altura = ALTURA_JANELA * escala;
+
+    // A textura de desenho fica de cabeca para baixo no OpenGL: a altura negativa desvira
+    Rectangle origem = { 0.0f, 0.0f, (float)tela_jogo.texture.width, -(float)tela_jogo.texture.height };
+    Rectangle destino = { (GetScreenWidth() - largura) / 2.0f, (GetScreenHeight() - altura) / 2.0f, largura, altura };
+
+    DrawTexturePro(tela_jogo.texture, origem, destino, (Vector2){ 0.0f, 0.0f }, 0.0f, WHITE);
+}
+
 int main(void){
+    // VSync: a imagem nova so vai para a tela quando o monitor termina de desenhar a anterior.
+    // Sem isso, em tela cheia o monitor pode mostrar metade de um frame e metade do outro
+    // (a "linha cortando" a imagem, mais visivel nas notas, que andam rapido).
+    SetConfigFlags(FLAG_VSYNC_HINT);
     InitWindow(LARGURA_JANELA, ALTURA_JANELA, TITULO_JANELA);
     InitAudioDevice();
     SetTargetFPS(FPS_ALVO);
     srand((unsigned int)time(NULL));
     carregarMenu();
     carregarInterface();
+    carregarSons();
+
+    // Tudo e desenhado nesta imagem de 1280x720, que depois e esticada para a janela (tela cheia)
+    RenderTexture2D tela_jogo = LoadRenderTexture(LARGURA_JANELA, ALTURA_JANELA);
+    SetTextureFilter(tela_jogo.texture, TEXTURE_FILTER_BILINEAR);
 
     // Volume geral do jogo (de 0 a 100%), guardado entre uma execucao e outra
     int volume = carregarVolume();
@@ -157,6 +182,27 @@ int main(void){
         if(musica_pendente[0] != '\0'){
             processarMusicaNova(musica_pendente, &musicas, &opcao_musica, mensagem_musica);
             musica_pendente[0] = '\0';
+        }
+
+        // Sons do menu, olhando a tela antes de ela mudar neste frame. ENTER confirma em todas as
+        // telas fora da partida (e na tela final); BACKSPACE so toca onde ele volta de tela.
+        // Enquanto a tela de teclas espera a tecla nova, nenhuma tecla faz som.
+        bool na_tela_final = tela_atual == TELA_JOGO && (jogo.fase == FASE_VITORIA || jogo.fase == FASE_DERROTA);
+        bool escolhendo_tecla = tela_atual == TELA_TECLAS && tela_teclas.aguardando;
+        bool backspace_volta = tela_atual == TELA_VOLUME || tela_atual == TELA_TECLAS ||
+                               tela_atual == TELA_MUSICA || tela_atual == TELA_DIFICULDADE;
+
+        if(!escolhendo_tecla && (tela_atual != TELA_JOGO || na_tela_final) && IsKeyPressed(TECLA_CONFIRMAR)){
+            tocarSomConfirmar();
+        }
+        else if(!escolhendo_tecla && backspace_volta && IsKeyPressed(TECLA_VOLTAR)){
+            tocarSomVoltar();
+        }
+
+        // F11 liga e desliga a tela cheia em qualquer tela do jogo. "Sem borda": a janela ocupa o
+        // monitor inteiro sem mudar a resolucao dele, e desenharTelaNaJanela estica a imagem.
+        if(IsKeyPressed(TECLA_TELA_CHEIA)){
+            ToggleBorderlessWindowed();
         }
 
         // Musica arrastada para a janela (fora da partida): vai para a tela de musicas e e adicionada
@@ -321,6 +367,11 @@ int main(void){
                 if(IsKeyPressed(TECLA_REWIND)){
                     usarRewind(&jogo);
 
+                    // So toca se o rewind aconteceu (ainda havia rewind e notas para voltar)
+                    if(jogo.fase == FASE_REWIND){
+                        tocarSomRewind();
+                    }
+
                     // A musica para durante a animacao e volta do ponto novo depois
                     if(tem_musica && musica_iniciada && jogo.fase == FASE_REWIND){
                         PauseMusicStream(musica);
@@ -347,7 +398,7 @@ int main(void){
             }
         }
 
-        BeginDrawing();
+        BeginTextureMode(tela_jogo);
         ClearBackground(BLACK);
 
         if(tela_atual == TELA_MENU){
@@ -382,6 +433,11 @@ int main(void){
             desenharJogo(&jogo);
         }
 
+        EndTextureMode();
+
+        BeginDrawing();
+        ClearBackground(BLACK);
+        desenharTelaNaJanela(tela_jogo);
         EndDrawing();
     }
 
@@ -398,6 +454,8 @@ int main(void){
     }
 
     descarregarListaMusicas(musicas);
+    UnloadRenderTexture(tela_jogo);
+    descarregarSons();
     descarregarInterface();
     descarregarMenu();
     CloseAudioDevice();

@@ -32,7 +32,8 @@ static const char *LINHAS_COMO_JOGAR[] = {
     "Acertos afastam o assassino. Erros o aproximam.",
     "Errou demais? O assassino joga notas extras na pauta.",
     "ESPACO: rewind, volta algumas notas (usos limitados).",
-    "Se o assassino te alcancar, fim de jogo."
+    "Se o assassino te alcancar, fim de jogo.",
+    "F11: liga e desliga a tela cheia."
 };
 #define QUANTIDADE_LINHAS_COMO_JOGAR (int)(sizeof(LINHAS_COMO_JOGAR) / sizeof(LINHAS_COMO_JOGAR[0]))
 
@@ -105,18 +106,18 @@ void desenharMenu(OpcaoMenu opcao_selecionada){
     DrawRectangle(0, 0, LARGURA_JANELA, ALTURA_JANELA, COR_FUNDO_MENU);
     desenharArteMenu();
 
-    int altura_opcoes = QUANTIDADE_OPCOES_MENU * ESPACO_OPCOES_MENU;
-    int posicao_y = (ALTURA_JANELA - altura_opcoes) / 2;
+    // As opcoes ficam na area vazia da capa: abaixo do titulo e a esquerda da mascara
+    int posicao_y = POSICAO_Y_OPCOES_MENU;
     int largura_marcador = MeasureText("> ", TAMANHO_FONTE_OPCOES_MENU);
 
     for(int opcao = 0; opcao < QUANTIDADE_OPCOES_MENU; opcao++){
         if(opcao == (int)opcao_selecionada){
-            DrawText(">", POSICAO_X_OPCOES_MENU - largura_marcador, posicao_y, TAMANHO_FONTE_OPCOES_MENU, COR_TEXTO_DESTAQUE);
-            DrawText(TEXTOS_OPCOES[opcao], POSICAO_X_OPCOES_MENU, posicao_y, TAMANHO_FONTE_OPCOES_MENU, COR_TEXTO_DESTAQUE);
+            DrawText(">", POSICAO_X_OPCOES_MENU - largura_marcador, posicao_y, TAMANHO_FONTE_OPCOES_MENU, COR_OPCAO_SELECIONADA);
+            DrawText(TEXTOS_OPCOES[opcao], POSICAO_X_OPCOES_MENU, posicao_y, TAMANHO_FONTE_OPCOES_MENU, COR_OPCAO_SELECIONADA);
         }else{
             DrawText(TEXTOS_OPCOES[opcao], POSICAO_X_OPCOES_MENU, posicao_y, TAMANHO_FONTE_OPCOES_MENU, Fade(COR_TEXTO, OPACIDADE_OPCAO_MENU));
         }
-        posicao_y += ESPACO_OPCOES_MENU;
+        posicao_y += ESPACO_OPCOES_MENU_PRINCIPAL;
     }
 
     DrawText("Setas para escolher, ENTER para confirmar", MARGEM_TELA, ALTURA_JANELA - MARGEM_TELA - TAMANHO_FONTE_INFO, TAMANHO_FONTE_INFO, Fade(COR_TEXTO, OPACIDADE_OPCAO_MENU));

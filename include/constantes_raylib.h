@@ -15,6 +15,7 @@
 #define TECLA_REWIND      KEY_SPACE
 #define TECLA_CONFIRMAR   KEY_ENTER
 #define TECLA_VOLTAR      KEY_BACKSPACE
+#define TECLA_TELA_CHEIA  KEY_F11
 #define TECLA_MENU_CIMA   KEY_UP
 #define TECLA_MENU_BAIXO  KEY_DOWN
 #define TECLA_MENU_ESQUERDA KEY_LEFT
@@ -30,7 +31,8 @@
 #define COR_LINHA_ACERTO      (Color){ 230, 230, 230, 255 }
 #define COR_TEXTO             (Color){ 235, 235, 235, 255 }
 #define COR_TEXTO_DESTAQUE    (Color){ 200, 30, 30, 255 }   // vermelho sangue
-#define COR_FUNDO_MENU        (Color){ 30, 31, 44, 255 }   // igual ao fundo da arte do menu
+#define COR_FUNDO_MENU        (Color){ 39, 39, 39, 255 }   // igual ao fundo cinza da capa (assets/menu_fundo.png)
+#define COR_OPCAO_SELECIONADA (Color){ 255, 0, 64, 255 }   // mesmo vermelho do titulo "Ritmo de Matar" da capa
 
 // Notas normais: uma cor por lane
 static const Color CORES_LANES[QUANTIDADE_LANES] = {

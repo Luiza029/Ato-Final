@@ -9,12 +9,18 @@
 static Texture2D textura_icone_rewind;
 static bool tem_icone_rewind = false;
 
-/* Sprite do assassino: QUADROS_SPRITE_ASSASSINO poses lado a lado. recorte_assassino e a
+/* Sprite de um personagem: poses de corrida lado a lado na mesma imagem. recorte e a
    parte de cada quadro que tem desenho (sem a sobra transparente), igual em todos os quadros
    para o personagem nao "tremer" de uma pose para a outra. */
-static Texture2D textura_assassino;
-static bool tem_sprite_assassino = false;
-static Rectangle recorte_assassino;
+typedef struct SpritePersonagem{
+    Texture2D textura;
+    Rectangle recorte;
+    int quadros;
+    bool carregado;
+} SpritePersonagem;
+
+static SpritePersonagem sprite_assassino;
+static SpritePersonagem sprite_sobrevivente;
 
 /* Fundo da cena em camadas, da mais distante para a mais proxima. Cada camada anda numa
    velocidade (as distantes mais devagar), o que da a sensacao de que os dois estao correndo. */
@@ -176,18 +182,22 @@ static void desenharRewindsRestantes(const EstadoJogo *jogo){
     }
 }
 
-/* Carrega o sprite do assassino e descobre o recorte: junta as areas com desenho de todos
-   os quadros (GetImageAlphaBorder acha o retangulo sem a sobra transparente de cada um). */
-static void carregarSpriteAssassino(void){
-    if(!FileExists(CAMINHO_SPRITE_ASSASSINO)){
+/* Carrega o sprite de um personagem e descobre o recorte: junta as areas com desenho de todos
+   os quadros (GetImageAlphaBorder acha o retangulo sem a sobra transparente de cada um).
+   Se o arquivo faltar, sprite->carregado fica false e o personagem vira um retangulo. */
+static void carregarSpritePersonagem(SpritePersonagem *sprite, const char *caminho, int quadros){
+    sprite->carregado = false;
+    sprite->quadros = quadros;
+
+    if(!FileExists(caminho)){
         return;
     }
 
-    Image imagem = LoadImage(CAMINHO_SPRITE_ASSASSINO);
-    float largura_quadro = (float)(imagem.width / QUADROS_SPRITE_ASSASSINO);
+    Image imagem = LoadImage(caminho);
+    float largura_quadro = (float)(imagem.width / quadros);
     float esquerda = largura_quadro, topo = (float)imagem.height, direita = 0.0f, base = 0.0f;
 
-    for(int quadro = 0; quadro < QUADROS_SPRITE_ASSASSINO; quadro++){
+    for(int quadro = 0; quadro < quadros; quadro++){
         Image pose = ImageFromImage(imagem, (Rectangle){ quadro * largura_quadro, 0.0f, largura_quadro, (float)imagem.height });
         Rectangle desenho = GetImageAlphaBorder(pose, TRANSPARENCIA_MINIMA_SPRITE);
         UnloadImage(pose);
@@ -203,45 +213,54 @@ static void carregarSpriteAssassino(void){
     }
 
     if(direita > esquerda && base > topo){
-        recorte_assassino = (Rectangle){ esquerda, topo, direita - esquerda, base - topo };
-        textura_assassino = LoadTextureFromImage(imagem);
+        sprite->recorte = (Rectangle){ esquerda, topo, direita - esquerda, base - topo };
+        sprite->textura = LoadTextureFromImage(imagem);
         // O desenho original e grande e vai ser reduzido: filtro bilinear para nao serrilhar
-        SetTextureFilter(textura_assassino, TEXTURE_FILTER_BILINEAR);
-        tem_sprite_assassino = true;
+        SetTextureFilter(sprite->textura, TEXTURE_FILTER_BILINEAR);
+        sprite->carregado = true;
     }
 
     UnloadImage(imagem);
 }
 
-/* Largura do assassino na tela: o recorte do sprite reduzido para a altura ASSASSINO_ALTURA. */
-static float calcularLarguraAssassino(void){
-    if(!tem_sprite_assassino){
-        return (float)ASSASSINO_LARGURA;
+static void descarregarSpritePersonagem(SpritePersonagem *sprite){
+    if(sprite->carregado){
+        UnloadTexture(sprite->textura);
+        sprite->carregado = false;
     }
-
-    return recorte_assassino.width * ASSASSINO_ALTURA / recorte_assassino.height;
 }
 
-/* Desenha o assassino correndo com o pe no chao, a partir de assassino_x.
-   No rewind a animacao roda de tras para frente, como uma fita voltando. */
-static void desenharAssassino(float assassino_x, int rebobinando){
-    if(!tem_sprite_assassino){
-        DrawRectangle((int)assassino_x, CHAO_Y - ASSASSINO_ALTURA, ASSASSINO_LARGURA, ASSASSINO_ALTURA, COR_TEXTO_DESTAQUE);
+/* Largura do personagem na tela: o recorte do sprite reduzido para a altura pedida,
+   mantendo a proporcao. Sem sprite, usa a largura do retangulo reserva. */
+static float calcularLarguraPersonagem(const SpritePersonagem *sprite, float altura, float largura_sem_sprite){
+    if(!sprite->carregado){
+        return largura_sem_sprite;
+    }
+
+    return sprite->recorte.width * altura / sprite->recorte.height;
+}
+
+/* Desenha o personagem correndo com o pe no chao, a partir de x.
+   No rewind a animacao roda de tras para frente, como uma fita voltando.
+   Sem sprite, desenha um retangulo da cor reserva no lugar. */
+static void desenharPersonagem(const SpritePersonagem *sprite, float x, float altura, float quadros_por_segundo,
+                               int rebobinando, float largura_sem_sprite, Color cor_sem_sprite){
+    if(!sprite->carregado){
+        DrawRectangle((int)x, CHAO_Y - (int)altura, (int)largura_sem_sprite, (int)altura, cor_sem_sprite);
         return;
     }
 
-    int quadro = (int)(GetTime() * QUADROS_POR_SEGUNDO_ASSASSINO) % QUADROS_SPRITE_ASSASSINO;
+    int quadro = (int)(GetTime() * quadros_por_segundo) % sprite->quadros;
     if(rebobinando){
-        quadro = QUADROS_SPRITE_ASSASSINO - 1 - quadro;
+        quadro = sprite->quadros - 1 - quadro;
     }
 
-    float largura_quadro = (float)(textura_assassino.width / QUADROS_SPRITE_ASSASSINO);
-    Rectangle origem = { quadro * largura_quadro + recorte_assassino.x, recorte_assassino.y,
-                         recorte_assassino.width, recorte_assassino.height };
-    Rectangle destino = { assassino_x, (float)(CHAO_Y - ASSASSINO_ALTURA),
-                          calcularLarguraAssassino(), (float)ASSASSINO_ALTURA };
+    float largura_quadro = (float)(sprite->textura.width / sprite->quadros);
+    Rectangle origem = { quadro * largura_quadro + sprite->recorte.x, sprite->recorte.y,
+                         sprite->recorte.width, sprite->recorte.height };
+    Rectangle destino = { x, CHAO_Y - altura, calcularLarguraPersonagem(sprite, altura, largura_sem_sprite), altura };
 
-    DrawTexturePro(textura_assassino, origem, destino, (Vector2){ 0.0f, 0.0f }, 0.0f, WHITE);
+    DrawTexturePro(sprite->textura, origem, destino, (Vector2){ 0.0f, 0.0f }, 0.0f, WHITE);
 }
 
 /* Carrega as camadas do fundo que existirem. Sem uma camada, o fundo simples continua no lugar. */
@@ -311,7 +330,8 @@ void carregarInterface(void){
         tem_icone_rewind = true;
     }
 
-    carregarSpriteAssassino();
+    carregarSpritePersonagem(&sprite_assassino, CAMINHO_SPRITE_ASSASSINO, QUADROS_SPRITE_ASSASSINO);
+    carregarSpritePersonagem(&sprite_sobrevivente, CAMINHO_SPRITE_SOBREVIVENTE, QUADROS_SPRITE_SOBREVIVENTE);
     carregarFundoCena();
 }
 
@@ -321,28 +341,31 @@ void descarregarInterface(void){
         tem_icone_rewind = false;
     }
 
-    if(tem_sprite_assassino){
-        UnloadTexture(textura_assassino);
-        tem_sprite_assassino = false;
-    }
+    descarregarSpritePersonagem(&sprite_assassino);
+    descarregarSpritePersonagem(&sprite_sobrevivente);
 
     descarregarFundoCena();
 }
 
-/* Cena de cima: sobrevivente, assassino e a pontuacao no canto. O sobrevivente ainda e um retangulo. */
+/* Cena de cima: sobrevivente, assassino e a pontuacao no canto. */
 void desenharCena(const EstadoJogo *jogo){
+    int rebobinando = jogo->fase == FASE_REWIND;
+
     desenharFundoCena(jogo->tempo_atual);
 
-    DrawRectangle(SOBREVIVENTE_X, CHAO_Y - SOBREVIVENTE_ALTURA, SOBREVIVENTE_LARGURA, SOBREVIVENTE_ALTURA, SKYBLUE);
+    desenharPersonagem(&sprite_sobrevivente, (float)SOBREVIVENTE_X, (float)SOBREVIVENTE_ALTURA, QUADROS_POR_SEGUNDO_SOBREVIVENTE,
+                       rebobinando, (float)SOBREVIVENTE_LARGURA, SKYBLUE);
 
     /* perigo vai de 0 (assassino longe) a 1 (assassino colado no sobrevivente).
        Usa a distancia exibida, que anda aos poucos, para o assassino correr ate o lugar novo. */
     float perigo = (DISTANCIA_MAXIMA_ASSASSINO - jogo->distancia_exibida)
                  / (float)(DISTANCIA_MAXIMA_ASSASSINO - DISTANCIA_MINIMA_ASSASSINO);
-    float assassino_x_perto = SOBREVIVENTE_X - calcularLarguraAssassino();
+    float largura_assassino = calcularLarguraPersonagem(&sprite_assassino, (float)ASSASSINO_ALTURA, (float)ASSASSINO_LARGURA);
+    float assassino_x_perto = SOBREVIVENTE_X - largura_assassino;
     float assassino_x = ASSASSINO_X_LONGE + (assassino_x_perto - ASSASSINO_X_LONGE) * perigo;
 
-    desenharAssassino(assassino_x, jogo->fase == FASE_REWIND);
+    desenharPersonagem(&sprite_assassino, assassino_x, (float)ASSASSINO_ALTURA, QUADROS_POR_SEGUNDO_ASSASSINO,
+                       rebobinando, (float)ASSASSINO_LARGURA, COR_TEXTO_DESTAQUE);
 
     desenharPontuacao(jogo);
 }
